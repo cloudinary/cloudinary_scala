@@ -1,0 +1,89 @@
+@(photos: List[Photo])
+
+@import cloudinary.views.html.helper._
+@import cloudinary.model._
+@import com.cloudinary._
+@import com.cloudinary.Implicits._
+
+@main("Cloudinary Photo Album") {
+<div id="posterframe">
+  <!-- This will render the fetched Facebook profile picture using Cloudinary according to the
+       requested transformations -->
+  <img src="@url("officialchucknorrispage", Set('format -> "png", 'type -> "facebook", 
+    'transformation -> Transformation().h_(95).w_(95).c_("thumb").g_("face").e_("sepia").r_(20)./.a_(10)))">
+</div>
+
+<h1>Welcome!</h1>
+
+<p>
+  This is the main demo page of the PhotoAlbum sample Play application of Cloudinary.<br />
+  Here you can see all images you have uploaded to this Rails application and find some information on how
+  to implement your own Play application storing, manipulating and serving your photos using Cloudinary!
+</p>
+
+<p>
+  All of the images you see here are transformed and served by Cloudinary. 
+  For instance, the logo and the poster frame. 
+  They are both generated in the cloud using the Cloudinary shortcut functions: url and facebookProfileImageUrl. 
+  These two pictures weren't even uploaded to Cloudinary, they are retrieved by the service, transformed, cached and distributed through a CDN.
+</p>
+
+<h1>Your Photos</h1>
+
+<div class="actions">
+  <a class="upload_link" href="@routes.PhotosController.fresh">Add photo</a>
+  <a class="upload_link" href="@routes.PhotosController.freshDirect">Add photo (direct upload)</a>
+</div>
+
+<div class="photos">
+  @if(photos.isEmpty) {
+    <p>No photos were added yet.</p>
+  }
+
+  @photos.map{photo =>
+	<div class="photo">
+		<h2>@photo.title</h2>
+		<a href="@photo.url" target="_blank">
+		<img src="@photo.thumbnailUrl" class="thumbnail inline">
+		</a>
+      
+      <div class="less_info">
+        <a href="#" class="toggle_info">Show transformations</a>
+      </div>
+      
+      <div class="more_info">
+        <a href="#" class="toggle_info">Hide transformations</a>
+        <table class="thumbnails">
+          @List[Transformation](
+          	Transformation().c_("fill").r_(10).h_(150).w_(150),
+          	Transformation().c_("scale").h_(150).w_(150),
+          	Transformation().c_("fit").h_(150).w_(150),
+          	Transformation().c_("thumb").g_("face").h_(150).w_(150),
+          	Transformation().f_("png").a_("20","1").c_("fill").g_("north").e_("sepia").h_(150).w_(150)
+          ).map{imageParams =>
+            <td>
+              <div class="thumbnail_holder">
+                <a target="_blank" href="@photo.image.url(imageParams)" > 
+                  <img src="@photo.image.url(imageParams)" class="thumbnail inline">
+                </a>
+              </div>
+              <div class="info">@imageParams.generate().split(",").mkString(", ")</div>
+            </td>
+          }
+        </table>
+        
+        <div class="note">              
+          Take a look at our documentation of <a href="http://cloudinary.com/documentation/image_transformations" target="_blank">Image Transformations</a> for a full list of supported transformations.
+        </div>  
+      </div>
+    </div>
+  }
+</div>
+
+<script type='text/javascript'>
+  $('.toggle_info').click(function () {
+    $(this).closest('.photo').toggleClass('show_more_info');
+    return false;
+  });
+</script>
+}

@@ -1,0 +1,39 @@
+@(photo: Photo, maybeUpload:Option[com.cloudinary.response.UploadResponse] = None)
+@main("Image Created") {
+<h1>Your photo was uploaded sucessfully!</h1>
+
+<div class="photo">
+  <h2>@photo.title</h2>
+  <a href="@photo.image.url()" target="_blank">
+    <image src="@photo.thumbnailUrl" class ="thumbnail inline">
+  </a>
+</div>
+
+<a href="@routes.PhotosController.index" class="back_link">Back to list</a>
+
+@maybeUpload.map{upload=>
+  <div class="upload_details">
+    <h2>Upload metadata:</h2>
+    <table>
+    	<tr><td>Public Id</td><td>@upload.public_id</td></tr>
+      	<tr><td>Version</td><td>@upload.version</td></tr>
+      	<tr><td>Height</td><td>@upload.height</td></tr>
+      	<tr><td>Width</td><td>@upload.width</td></tr>
+      	<tr><td>Bytes</td><td>@upload.bytes</td></tr>
+      	<tr><td>Created At</td><td>@upload.createdAt</td></tr>
+      	<tr><td>Format</td><td>@upload.format</td></tr>
+      	<tr><td>Metadata</td><td>@upload.metadata</td></tr>
+      	<tr><td>URL</td><td>@upload.url</td></tr>
+      	<tr><td>Secure URL</td><td>@upload.secure_url</td></tr>
+      	<tr><td>Resource Type</td><td>@upload.resource_type</td></tr>
+      	<tr><td>Faces</td><td>@upload.faces</td></tr>
+      	<tr><td>Colors</td><td>@upload.colors.map{c=>
+      		<span style="border-left:5px solid @c.color">@c.rank</span>
+      	}</td></tr>
+	    <tr><td>Exif</td><td>@upload.exif</td></tr>
+    	<tr><td>Predominant</td><td>@upload.predominant</td></tr>
+      	<tr><td>Signature</td><td>@upload.signature</td></tr>
+    </table>
+  </div>
+}    
+}

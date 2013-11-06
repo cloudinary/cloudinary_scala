@@ -1,0 +1,17 @@
+@(withProcessing:Boolean = false, prefix:String = "/")
+
+@import play.api.mvc._
+
+@at(file:String) = @{
+	lazy val defaultPrefix = { if(prefix.endsWith("/")) "" else "/" }
+	Call("GET", prefix + { defaultPrefix } + "assets/" + implicitly[PathBindable[String]].unbind("file", file))
+}
+
+@List("jquery.ui.widget.js", "jquery.iframe-transport.js", "jquery.fileupload.js", "jquery.cloudinary.js").map{dependency => 
+	<script src="@at(s"javascripts/cloudinary/$dependency")"></script>	
+}
+@if(withProcessing) {
+	@List("canvas-to-blob.min.js", "load-image.min.js", "jquery.fileupload-process.js", "jquery.fileupload-image.js", "jquery.fileupload-validate.js").map{dependency => 
+		<script src="@at(s"javascripts/cloudinary/$dependency")"></script>	
+	}
+}	

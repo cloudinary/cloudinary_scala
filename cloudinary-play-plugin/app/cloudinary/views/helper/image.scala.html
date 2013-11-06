@@ -1,0 +1,3 @@
+@(resource:cloudinary.model.CloudinaryResource, args: (Symbol,Any)*)
+
+<img src="@resource.url()" @toHtmlArgs(args.toMap)>

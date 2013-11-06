@@ -1,0 +1,19 @@
+@(uploadForm:Form[PhotoDetails])
+
+@main("New Photo") {
+<div id='backend_upload'>
+  <h1>New Photo</h1>
+  <h2>Image file is uploaded through the server</h2>
+  @helper.form(action = routes.PhotosController.create(), 'enctype -> "multipart/form-data") {
+
+    @helper.inputText(uploadForm("title"))
+    @helper.inputFile(uploadForm("photo"))
+
+    <p>
+        <input type="submit">
+    </p>
+  }
+</div>
+
+<a href="@routes.PhotosController.index" class="back_link">Back to list</a>
+}
