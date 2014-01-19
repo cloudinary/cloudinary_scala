@@ -4,23 +4,6 @@ import com.cloudinary.Transformation
 import com.cloudinary.EagerTransformation
 import com.cloudinary.response.FaceInfo
 
-case class StoreParameters(publicId: Option[String] = None, `type`: Option[String] = None, folder: Option[String] = None, 
-    discardOriginalFilename: Option[Boolean] = None, useFilename: Option[Boolean] = None, 
-    uniqueFilename: Option[Boolean] = None, overwrite: Option[Boolean] = None)
-    
-case class EagerParameters(eager: List[Transformation] = List(), eagerNotificationUrl: Option[String] = None, 
-    eagerAsync: Option[Boolean] = None)
-    
-case class AnnotationParameters(customHeaders: Map[String, String] = Map(), tags: List[String] = List(), 
-    faceCoordinates: List[FaceInfo] = List(), context: Map[String, String] = Map())
-    
-case class InformationParameters(exif: Option[Boolean] = None, faces: Option[Boolean] = None, 
-    colors: Option[Boolean] = None, imageMetadata: Option[Boolean] = None)
-    
-case class FormatParameters(format: Option[String] = None, allowedFormats: Set[String] = Set())
-
-case class LifecycleParameters(callback: Option[String] = None, notificationUrl: Option[String] = None, backup: Option[Boolean] = None, invalidate: Option[Boolean] = None)
-
 case class UploadParameters(parameters: Map[String, String] = Map()) {
   def toMap:Map[String,String] = parameters.filterNot(p => p._2.isEmpty())
   protected def param(key:String, value:String) = UploadParameters(parameters + (key -> value))
