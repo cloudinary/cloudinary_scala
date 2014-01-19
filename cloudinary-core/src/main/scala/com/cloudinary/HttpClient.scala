@@ -17,6 +17,7 @@ object HttpClient {
   private[cloudinary] def newClient(): AsyncHttpClient = {
 
     val asyncHttpConfig = new AsyncHttpClientConfig.Builder()
+    asyncHttpConfig.setUserAgent(Cloudinary.USER_AGENT)
     new AsyncHttpClient(asyncHttpConfig.build())
   }
 

@@ -1,9 +1,9 @@
 name := "photo_album_scala"
 
-version := "0.9-SNAPSHOT"
+version := "0.9.1-SNAPSHOT"
 
 libraryDependencies ++= Seq(
-  "com.cloudinary" %% "cloudinary-play-module" % "0.9-SNAPSHOT",
+  "com.cloudinary" %% "cloudinary-play-module" % "0.9.1-SNAPSHOT",
   "com.typesafe.play" %% "play-slick" % "0.5.0.8"
 )     
 

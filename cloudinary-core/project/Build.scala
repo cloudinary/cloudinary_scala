@@ -3,7 +3,7 @@ import Keys._
   
 object BuildSettings {
   val buildOrganization = "com.cloudinary"
-  val buildVersion = "0.9-SNAPSHOT"
+  val buildVersion = "0.9.1-SNAPSHOT"
   val buildScalaVersion = "2.10.2"
     
   val buildSettings = Defaults.defaultSettings ++ Seq (

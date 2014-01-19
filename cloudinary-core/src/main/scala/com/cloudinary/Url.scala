@@ -1,6 +1,7 @@
 package com.cloudinary
 
 import java.net.URLDecoder
+import com.ning.http.util.Base64
 
 case class Url(
   cloudName: String,
@@ -14,7 +15,9 @@ case class Url(
   resourceType: String = "image",
   format: Option[String] = None,
   version: Option[String] = None,
-  transformation: Option[Transformation] = None) {
+  transformation: Option[Transformation] = None,
+  signUrl: Boolean = false,
+  apiSecret: Option[String] = None) {
   def this(cloudinary: Cloudinary) {
     this(
       cloudName = cloudinary.getStringConfig("cloud_name").get,
@@ -23,7 +26,9 @@ case class Url(
       secure = cloudinary.getBooleanConfig("secure", false),
       privateCdn = cloudinary.getBooleanConfig("private_cdn", false),
       cdnSubdomain = cloudinary.getBooleanConfig("cdn_subdomain", false),
-      shorten = cloudinary.getBooleanConfig("shorten", false))
+      shorten = cloudinary.getBooleanConfig("shorten", false),
+      signUrl = cloudinary.getBooleanConfig("sign_url", false),
+      apiSecret = cloudinary.getStringConfig("api_secret"))
   }
 
   def `type`(t: String): Url = copy(`type` = t)
@@ -38,6 +43,7 @@ case class Url(
   def privateCdn(privateCdnValue: Boolean): Url = copy(privateCdn = privateCdnValue)
   def cdnSubdomain(cdnSubdomainValue: Boolean): Url = copy(cdnSubdomain = cdnSubdomainValue)
   def shorten(shortenValue: Boolean): Url = copy(shorten = shortenValue)
+  def signed(signUrlValue: Boolean): Url = copy(signUrl = signUrlValue)
 
   private def getPrefix(source: String): String = {
     var result = ""
@@ -93,7 +99,16 @@ case class Url(
     }
 
     version = version.map("v" + _)
-    val pathComps: List[Option[String]] = List(Some(prefix), Some(resourceType), Some(`type`), transformationStr, version, Some(source))
+
+    val rest = List(transformationStr, version, Some(source)).flatten.mkString("/")
+    val signature = if (signUrl) {
+      Some("s--" + 
+          Base64.encode(Cloudinary.sign(rest, apiSecret.getOrElse(throw new Exception("Must supply api secret to sign URLs")))).
+          	take(8).
+          	replace('+', '-').replace('/', '_') + "--")
+    } else None
+    
+    val pathComps: List[Option[String]] = List(Some(prefix), Some(resourceType), Some(`type`), signature, Some(rest))
     pathComps.flatten.mkString("/").replaceAll("([^:])\\/+", "$1/")
   }
 

@@ -4,9 +4,14 @@
 @current.plugin[CloudinaryPlugin].map(_.cloudinary).map { c =>
 	<script type="text/javascript">
 		$.cloudinary.config({
-			@List("api_key", "cloud_name", "private_cdn", "secure_distribution", "cdn_subdomain").map{k => 
-				@if(c.getStringConfig(k).isDefined){
+			@List("api_key", "cloud_name").map{k => 
+			  @if(c.getStringConfig(k).isDefined){
 				  "@k": "@{c.getStringConfig(k).get}",
+			  }
+			}
+			@List("cdn_subdomain", "private_cdn", "secure_distribution").map{k => 
+			  @if(c.getStringConfig(k).isDefined){
+				  "@k": @{c.getStringConfig(k).get},
 			  }
 			}
 		});

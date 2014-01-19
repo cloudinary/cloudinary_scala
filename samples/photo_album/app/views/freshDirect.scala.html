@@ -19,7 +19,7 @@
     	<div class="form_controls">
     		<div class="upload_button_holder">
     			<a href="#" class="upload_button">Upload</a>
-    			@resourceUploadTag(photoUploadForm("image"),UploadParameters(faces=Some(true), colors=Some(true), imageMetadata=Some(true), exif=Some(true), eager = List(Transformation().w_(150).h_(150).c_("fit"))))
+    			@resourceUploadTag(photoUploadForm("image"),UploadParameters().callback("http://localhost:9000").faces(true).colors(true).imageMetadata(true).exif(true).eager(List(Transformation().w_(150).h_(150).c_("fit"))))
     			@if(photoUploadForm("image").hasErrors){
     				<span class="errors">@photoUploadForm("image").error.map(_.message)</span>	
     			}

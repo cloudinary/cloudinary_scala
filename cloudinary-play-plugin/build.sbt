@@ -2,10 +2,10 @@ name := "cloudinary-play-module"
 
 organization := "com.cloudinary"
 
-version := "0.9-SNAPSHOT"
+version := "0.9.1-SNAPSHOT"
 
 resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 
-libraryDependencies ++= Seq("com.cloudinary" %% "cloudinary-core-scala" % "0.9-SNAPSHOT")    
+libraryDependencies ++= Seq("com.cloudinary" %% "cloudinary-core-scala" % "0.9.1-SNAPSHOT")    
 
 play.Project.playScalaSettings

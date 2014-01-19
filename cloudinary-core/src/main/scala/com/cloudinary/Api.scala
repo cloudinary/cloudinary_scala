@@ -12,6 +12,10 @@ object Api {
   case object POST extends HttpMethod("POST")
   case object PUT extends HttpMethod("PUT")
   case object DELETE extends HttpMethod("DELETE")
+  
+  abstract class ListDirection(val dir:String)
+  case object ASCENDING extends ListDirection("asc")
+  case object DESCENDING extends ListDirection("desc")
 }
 
 class Api(implicit cloudinary: Cloudinary) {
@@ -76,32 +80,43 @@ class Api(implicit cloudinary: Cloudinary) {
   def resourceTypes() =
     callApi[ResourceTypesResponse](Api.GET, "resources" :: Nil, Map())
 
-  def resources(nextCursor: Option[String] = None, maxResults: Option[Int] = None, prefix: Option[String] = None, tags: Boolean = false,
-    resourceType: String = "image", `type`: Option[String] = None) =
+  def resources(nextCursor: Option[String] = None, maxResults: Option[Int] = None, prefix: Option[String] = None, tags: Boolean = false, context: Boolean = false,
+    direction: Option[Api.ListDirection] = None, resourceType: String = "image", `type`: Option[String] = None) =
     callApi[ResourcesResponse](Api.GET, "resources" :: resourceType :: `type`.getOrElse("") :: Nil,
-      Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "prefix" -> prefix, "tags" -> tags))
+      Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "prefix" -> prefix, "tags" -> tags, "context" -> context, "direction" -> direction.map(_.dir)))
 
-  def resourcesByTag(tag: String, nextCursor: Option[String] = None, maxResults: Option[Int] = None, resourceType: String = "image") = {
+  def resourcesByTag(tag: String, nextCursor: Option[String] = None, maxResults: Option[Int] = None, resourceType: String = "image", 
+      direction: Option[Api.ListDirection] = None, tags: Boolean = false, context: Boolean = false) = {
     callApi[ResourcesResponse](Api.GET, List("resources", resourceType, "tags", tag),
-      Map("next_cursor" -> nextCursor, "max_results" -> maxResults))
+      Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "tags" -> tags, "context" -> context, "direction" -> direction.map(_.dir)))
   }
+  
+  def resourcesByIds(publicIds:List[String], tags: Boolean = false, context: Boolean = false,
+    resourceType: String = "image", `type`: String = "upload") =
+    callApi[ResourcesResponse](Api.GET, "resources" :: resourceType :: `type` :: Nil,
+      Map("public_ids" -> publicIds.mkString(","), "tags" -> tags, "context" -> context))
 
   def resource(publicId: String, derived:Boolean = true, exif: Boolean = false, colors: Boolean = false, faces: Boolean = false, imageMetadata: Boolean = false,
-    pages: Boolean = false, maxResults: Option[Int] = None, resourceType: String = "image", `type`: String = "upload") =
+    pages: Boolean = false, maxResults: Option[Int] = None, resourceType: String = "image", `type`: String = "upload") = {
     callApi[ResourceResponse](Api.GET, List("resources", resourceType, `type`, publicId),
       Map("derived" -> derived, "exif" -> exif, "colors" -> colors, "faces" -> faces, "image_metadata" -> imageMetadata, "pages" -> pages, "max_results" -> maxResults));
+  }
 
-  def deleteResources(publicIds: Iterable[String], keepOriginal: Boolean = false, resourceType: String = "image", `type`: String = "upload") =
+  def deleteResources(publicIds: Iterable[String], nextCursor:Option[String] = None, keepOriginal: Boolean = false, resourceType: String = "image", `type`: String = "upload") =
     callApi[DeleteResourceResponse](Api.DELETE, List("resources", resourceType, `type`),
-      Map("public_ids" -> publicIds, "keep_original" -> keepOriginal));
+      Map("public_ids" -> publicIds, "keep_original" -> keepOriginal, "next_cursor" -> nextCursor))
 
-  def deleteResourcesByPrefix(prefix: String, keepOriginal: Boolean = false, resourceType: String = "image", `type`: String = "upload") =
+  def deleteResourcesByPrefix(prefix: String, nextCursor:Option[String] = None, keepOriginal: Boolean = false, resourceType: String = "image", `type`: String = "upload") =
     callApi[DeleteResourceResponse](Api.DELETE, List("resources", resourceType, `type`),
-      Map("prefix" -> prefix, "keep_original" -> keepOriginal));
+      Map("prefix" -> prefix, "keep_original" -> keepOriginal, "next_cursor" -> nextCursor))
 
-  def deleteResourcesByTag(tag: String, keepOriginal: Boolean = false, resourceType: String = "image") =
+  def deleteResourcesByTag(tag: String, nextCursor:Option[String] = None, keepOriginal: Boolean = false, resourceType: String = "image") =
     callApi[DeleteResourceResponse](Api.DELETE, List("resources", resourceType, "tags", tag),
-      Map("keep_original" -> keepOriginal))
+      Map("keep_original" -> keepOriginal, "next_cursor" -> nextCursor))
+      
+  def deleteAllResources(nextCursor:Option[String] = None, keepOriginal: Boolean = false, resourceType: String = "image", `type`: String = "upload") =
+    callApi[DeleteResourceResponse](Api.DELETE, List("resources", resourceType, `type`),
+      Map("all" -> true, "keep_original" -> keepOriginal, "next_cursor" -> nextCursor))
 
   def deleteDerivedResources(derivedResourceIds: Iterable[String], options: Map[String, Any] = Map()) =
     callApi[DeleteResourceResponse](Api.DELETE, List("derived_resources"),

@@ -13,6 +13,8 @@ object Cloudinary {
   final val OLD_AKAMAI_SHARED_CDN = "cloudinary-a.akamaihd.net";
   final val AKAMAI_SHARED_CDN = "res.cloudinary.com";
   final val SHARED_CDN = AKAMAI_SHARED_CDN;
+  final val VERSION = "0.9.1-SNAPSHOT"
+  final val USER_AGENT = s"cld-scala-$VERSION"
 
   def configFromUrl(cloudinaryUrl: String): Map[String, Any] = {
     val cloudinaryUri = new URI(cloudinaryUrl);
@@ -61,8 +63,12 @@ object Cloudinary {
       case (k, v) if (v != null && v.toString() != "") => s"$k=$v"
     }
 
-    val toSign = params.mkString("&")
-
+    val digest = sign(params.mkString("&"), apiSecret)
+    
+    bytes2Hex(digest).toLowerCase()
+  }
+  
+  def sign(toSign:String, apiSecret: String) = {
     var md: MessageDigest = null
     try {
       md = MessageDigest.getInstance("SHA-1")
@@ -70,8 +76,7 @@ object Cloudinary {
       case e: NoSuchAlgorithmException => throw new RuntimeException("Unexpected exception", e);
     }
 
-    val digest = md.digest((toSign + apiSecret).getBytes());
-    bytes2Hex(digest).toLowerCase()
+    md.digest((toSign + apiSecret).getBytes());
   }
 
   def asString(value: Any, defaultValue: Option[String] = None): Option[String] =

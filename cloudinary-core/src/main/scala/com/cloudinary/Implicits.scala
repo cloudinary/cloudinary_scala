@@ -7,4 +7,5 @@ object Implicits {
 	implicit def stringToOptionalString(s:String):Option[String] = Option(s)
 	implicit def intToOptionalInt(i:Int):Option[Int] = Option(i)
 	implicit def transformationToOptionalTransformation(t:Transformation):Option[Transformation] = Option(t)
+	implicit def listDirectionToListDirectionInt(i:Api.ListDirection):Option[Api.ListDirection] = Option(i)
 }

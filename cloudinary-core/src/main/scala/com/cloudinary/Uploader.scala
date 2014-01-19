@@ -101,14 +101,10 @@ class Uploader(implicit val cloudinary: Cloudinary) {
   }
 
   def explicit(publicId: String, callback:Option[String] = None, `type`:Option[String] = None, 
-      eager:List[Transformation] = List(), customHeaders:Map[String, String] = Map(), tags:List[String] = List()) = {
-    val params = UploadParameters(
-        publicId = Some(publicId),
-        callback = callback,
-        `type` = `type`,
-        eager = eager,
-        customHeaders = customHeaders,
-        tags = tags)
+      eager:List[Transformation] = List(), customHeaders:Map[String, String] = Map(), tags:Set[String] = Set(), faceCoordinates:List[FaceInfo] = List()) = {
+    val params = UploadParameters().publicId(publicId).`type`(`type`.getOrElse("")).eager(eager).
+    		headers(customHeaders).tags(tags).faceCoordinates(faceCoordinates).
+    		callback(callback.getOrElse(""))
     callApi[ExplicitResponse]("explicit", params.toMap, null)
   }
 

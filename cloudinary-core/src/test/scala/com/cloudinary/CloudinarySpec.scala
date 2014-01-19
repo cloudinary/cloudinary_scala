@@ -153,6 +153,22 @@ class CloudinarySpec extends FlatSpec with ShouldMatchers with OptionValues with
       "http://res.cloudinary.com/test123/image/sprite/test.css")
   }
 
+  it should "correctly sign a url" in {
+    cloudinary.url().version(1234).
+      transformation(new Transformation().crop("crop").width(10).height(20)).
+      signed(true).
+      generate("image.jpg") should equal("http://res.cloudinary.com/test123/image/upload/s--MaRXzoEC--/c_crop,h_20,w_10/v1234/image.jpg")
+
+    cloudinary.url().version(1234).
+      signed(true).
+      generate("image.jpg") should equal("http://res.cloudinary.com/test123/image/upload/s--ZlgFLQcO--/v1234/image.jpg");
+
+    cloudinary.url().
+      transformation(new Transformation().crop("crop").width(10).height(20)).
+      signed(true).
+      generate("image.jpg") should equal("http://res.cloudinary.com/test123/image/upload/s--Ai4Znfl3--/c_crop,h_20,w_10/image.jpg")
+  }
+
   it should "support escape public ids" in {
     Map(
       "a b" -> "a%20b",

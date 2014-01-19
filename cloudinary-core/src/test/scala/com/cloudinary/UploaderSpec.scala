@@ -8,6 +8,7 @@ import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import parameters._
 import Implicits._
+import com.cloudinary.response.FaceInfo
 
 class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with Inside {
   lazy val cloudinary = {
@@ -24,7 +25,7 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
     val result = Await result (
       cloudinary
       .uploader()
-      .upload("src/test/resources/logo.png", UploadParameters(colors = true)), 5 seconds)
+      .upload("src/test/resources/logo.png", UploadParameters().colors(true)), 5 seconds)
 
     result.width should equal(241)
     result.height should equal(51)
@@ -50,13 +51,13 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
     val expectedSignature = Cloudinary.apiSignRequest(toSign, cloudinary.apiSecret()).toLowerCase()
     result.signature should equal(expectedSignature)
   }
-  
+
   it should "return face coordinates when requested" in {
-    val result =  Await result (
-      cloudinary.uploader().upload("http://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Bill_Clinton.jpg/220px-Bill_Clinton.jpg", 
-          UploadParameters(faces = true)), 5 seconds)
-    result.faces.size should equal (1)  
-  } 
+    val result = Await result (
+      cloudinary.uploader().upload("http://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Bill_Clinton.jpg/220px-Bill_Clinton.jpg",
+        UploadParameters().faces(true)), 5 seconds)
+    result.faces.size should equal(1)
+  }
 
   it should "upload from data" in {
     val result = Await result (
@@ -107,7 +108,7 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
     val result = Await.result(
       cloudinary.uploader().explicit("cloudinary",
         eager = List(Transformation().c_("scale").w_(2.0)),
-          `type` = "twitter_name"), 5 seconds)
+        `type` = "twitter_name"), 5 seconds)
     val Some(url) = result.eager.headOption.map(_.url)
     var expectedUrl = cloudinary.url().`type`("twitter_name")
       .transformation(new Transformation().crop("scale").width(2.0))
@@ -120,7 +121,7 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
 
   it should "attach headers when specified, both as maps and as lists" in {
     Await.result(
-      cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters(customHeaders = Map("Link" -> "1"))), 5 seconds)
+      cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().headers(Map("Link" -> "1"))), 5 seconds)
   }
 
   it should "support adding text" in {
@@ -133,9 +134,9 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
   it should "support generating sprites" in {
     Await.result(
       cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-        UploadParameters(tags = List("multi_test_tag"), publicId = "multi_test_tag_1")).andThen {
+        UploadParameters().tags(Set("multi_test_tag")).publicId("multi_test_tag_1")).andThen {
           case _ => cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-            UploadParameters(tags = List("multi_test_tag"), publicId = "multi_test_tag_2"))
+            UploadParameters().tags(Set("multi_test_tag")).publicId("multi_test_tag_2"))
         }, 10 seconds)
     Await.result(cloudinary.uploader().generateSprite("sprite_test_tag"), 5 seconds).image_infos.size should equal(2)
     Await.result(cloudinary.uploader().generateSprite("sprite_test_tag", transformation = new Transformation().w_(100)), 5 seconds).css_url should include("w_100")
@@ -145,12 +146,12 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
   it should "support multi" in {
     val (url1, url2, url3) = Await.result(for {
       r1 <- cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-        UploadParameters(tags = List("sprite_test_tag"), publicId = "sprite_test_tag_1"))
+        UploadParameters().tags(Set("sprite_test_tag")).publicId("sprite_test_tag_1"))
       r2 <- cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-        UploadParameters(tags = List("sprite_test_tag"), publicId = "sprite_test_tag_2"))
+        UploadParameters().tags(Set("sprite_test_tag")).publicId("sprite_test_tag_2"))
       url1 <- cloudinary.uploader().multi("multi_test_tag").map(_.url) if (r1 != null && r2 != null)
       url2 <- cloudinary.uploader().multi("multi_test_tag", transformation = Transformation().w_(100)).map(_.url) if (r1 != null && r2 != null)
-      url3 <- cloudinary.uploader().multi("multi_test_tag", transformation = Transformation().w_(101), format = "pdf").map(_.url)  if (r1 != null && r2 != null)
+      url3 <- cloudinary.uploader().multi("multi_test_tag", transformation = Transformation().w_(101), format = "pdf").map(_.url) if (r1 != null && r2 != null)
     } yield (url1, url2, url3), 20 seconds)
 
     url1 should endWith(".gif")
@@ -175,15 +176,47 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
       (List("tag1", "tag2"), List("tag1"), List("tag2"), List("tag3")))
   }
 
+  it should "allow whitelisted formats if allowed_formats" in {
+    Await.result(for {
+      result <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().allowedFormats(Set("png")))
+    } yield result.format, 5.seconds) should equal("png")
+  }
+
+  it should "prevent non whitelisted formats from being uploaded if allowed_formats is specified" in {
+    Await.result(for {
+      error <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().allowedFormats(Set("jpg"))).recover{case e => e}
+    } yield {error}, 5.seconds).isInstanceOf[BadRequest] should equal(true)  
+  }
+
+  it should "allow non whitelisted formats if type is specified and convert to that type" in {
+    Await.result(for {
+      result <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().allowedFormats(Set("jpg")).format("jpg"))
+    } yield result.format, 5.seconds) should equal("jpg")
+  }
+
+  it should "allow sending face coordinates" in {
+    val faces1 = List(FaceInfo(121, 31, 110, 151), FaceInfo(120, 30, 109, 150))
+    val faces2 = List(FaceInfo(122, 32, 111, 152))
+    Await.result(for {
+      r1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().faceCoordinates (faces1))
+      resource1 <- cloudinary.api.resource(r1.public_id, faces=true) if r1 != null
+      r2 <- cloudinary.uploader().explicit(r1.public_id, `type` = "upload", faceCoordinates = faces2) if resource1 != null
+      resource2 <- cloudinary.api.resource(r1.public_id, faces=true) if r2 != null
+    } yield {
+      resource1.faces should equal(faces1)
+      resource2.faces should equal(faces2)
+    }, 10.seconds)
+  }
+
   it should "create an upload tag" in {
-    val tag = cloudinary.uploader().imageUploadTag("test-field", UploadParameters(callback = "http://localhost/cloudinary_cors.html"), Map("htmlattr" -> "htmlvalue"))
+    val tag = cloudinary.uploader().imageUploadTag("test-field", UploadParameters().callback("http://localhost/cloudinary_cors.html"), Map("htmlattr" -> "htmlvalue"))
     tag should include("type=\"file\"")
     tag should include("data-cloudinary-field=\"test-field\"")
     tag should include("class=\"cloudinary-fileupload\"")
     tag should include("htmlattr=\"htmlvalue\"")
     tag should include("type=\"file\"")
     cloudinary.uploader().imageUploadTag("test-field",
-      UploadParameters(callback = "http://localhost/cloudinary_cors.html"),
+      UploadParameters().callback("http://localhost/cloudinary_cors.html"),
       Map("class" -> "myclass")) should include("class=\"cloudinary-fileupload myclass\"")
   }
 }

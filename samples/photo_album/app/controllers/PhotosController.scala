@@ -62,7 +62,7 @@ object PhotosController extends Controller {
           val formWithErrors = photoForm.withError(FormError("photo", "Must supply photo"))
           future { BadRequest(views.html.fresh(formWithErrors)) }
         } else {
-          CloudinaryResource.upload(resourceFile.get.ref.file, UploadParameters(faces=true, colors=true, imageMetadata=true, exif=true)).map {
+          CloudinaryResource.upload(resourceFile.get.ref.file, UploadParameters().faces(true).colors(true).imageMetadata(true).exif(true)).map {
             cr =>
               val photo = Photo(None, photoDetails.title, cr, cr.data.get.bytes.toInt, DateTime.now)
               val newPhotoId = DB.withSession { implicit session: Session =>
