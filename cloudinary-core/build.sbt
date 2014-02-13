@@ -1,20 +1,16 @@
+import sbt._
+import Keys._
 import SonatypeKeys._
 
 sonatypeSettings
-
-name := "cloudinary-scala-play"
 
 organization := "com.cloudinary"
 
 version := "0.9.1-SNAPSHOT"
 
-resolvers += "sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+scalaVersion := "2.10.2"
 
-resolvers += "sonatype releases" at "https://oss.sonatype.org/content/repositories/releases"
-
-resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
-
-libraryDependencies ++= Seq("com.cloudinary" %% "cloudinary-core-scala" % "0.9.1-SNAPSHOT")    
+name := "cloudinary-core-scala"
 
 pomExtra := {
   <url>http://cloudinary.com</url>
@@ -37,6 +33,10 @@ pomExtra := {
         <email>info@cloudinary.com</email>
     </developer>
   </developers>
-}
+}  
+  
+libraryDependencies ++= Seq("com.ning" % "async-http-client" % "1.7.19", "org.json4s" %% "json4s-native" % "3.2.5", "org.scalatest" % "scalatest_2.10" % "1.9.2" % "test")
 
-play.Project.playScalaSettings
+resolvers ++= Seq("sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots", "sonatype releases" at "https://oss.sonatype.org/content/repositories/releases")
+
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
