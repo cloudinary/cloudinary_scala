@@ -5,12 +5,12 @@ import com.ning.http.util.Base64
 
 case class Url(
   cloudName: String,
-  secure: Boolean,
-  privateCdn: Boolean,
-  secureDistribution: Option[String],
-  cdnSubdomain: Boolean,
-  shorten: Boolean,
-  cname: Option[String],
+  secure: Boolean = false,
+  privateCdn: Boolean = false,
+  secureDistribution: Option[String] = None,
+  cdnSubdomain: Boolean = false,
+  shorten: Boolean = false,
+  cname: Option[String] = None,
   `type`: String = "upload",
   resourceType: String = "image",
   format: Option[String] = None,
