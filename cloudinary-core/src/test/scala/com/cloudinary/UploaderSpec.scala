@@ -127,8 +127,8 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
   it should "support adding text" in {
     val result = Await.result(
       cloudinary.uploader().text(TextParameters("hello world")), 5 seconds)
-    result.width should be > (1)
-    result.height should be > (1)
+    result.width.get should be > (1)
+    result.height.get should be > (1)
   }
 
   it should "support generating sprites" in {
@@ -218,5 +218,65 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
     cloudinary.uploader().imageUploadTag("test-field",
       UploadParameters().callback("http://localhost/cloudinary_cors.html"),
       Map("class" -> "myclass")) should include("class=\"cloudinary-fileupload myclass\"")
+  }
+  
+  it should "support requesting manual moderation" in {
+    Await.result(for  {
+      result <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
+    } yield {
+      result.moderation.head.status should equal(com.cloudinary.response.ModerationStatus.pending)
+      result.moderation.head.kind should equal("manual")
+    }, 10.seconds)
+  }
+  
+  it should "support requesting ocr info" in {
+    val error = Await.result(for {
+      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().ocr("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting raw conversion" in {
+    val error = Await.result(for {
+      e <- cloudinary.uploader().upload("src/test/resources/docx.docx", UploadParameters().rawConvert("illegal"), "raw").recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting categorization" in {
+    val error = Await.result(for {
+      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().categorization("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting detection" in {
+    val error = Await.result(for {
+      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().detection("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting similarity search" in {
+    val error = Await.result(for {
+      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().similaritySearch("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting auto_tagging" in {
+    val error = Await.result(for {
+      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().autoTagging(0.5)).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Must use")
+  }
+  
+  it should "support uploading large raw files" in {
+    Await.result(for {
+      response <- cloudinary.uploader().uploadLargeRaw("src/test/resources/docx.docx", LargeUploadParameters())
+    } yield {
+      response.bytes should equal(new java.io.File("src/test/resources/docx.docx").length())
+      response.done should equal(Some(true))
+    }, 10.seconds)
   }
 }

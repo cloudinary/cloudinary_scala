@@ -7,6 +7,7 @@ import scala.util.Success
 import org.scalatest._
 import org.scalatest.matchers.ShouldMatchers
 import parameters._
+import response._
 import Implicits._
 
 class ApiSpec extends FlatSpec with ShouldMatchers with OptionValues with Inside with BeforeAndAfterAll {
@@ -221,6 +222,87 @@ class ApiSpec extends FlatSpec with ShouldMatchers with OptionValues with Inside
 
   it should "support ping API call" in {
     Await.result(api.ping().map(_.status), 5 seconds) should equal("ok")
+  }
+  
+  it should "support setting manual moderation status" in {
+    Await.result(for  {
+      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
+      apiResult <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().moderationStatus(ModerationStatus.approved))
+    } yield apiResult, 10.seconds).moderation.head.status should equal(ModerationStatus.approved)
+  }
+  
+  it should "support requesting ocr info" in {
+    val error = Await.result(for {
+      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().ocr("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting raw conversion" in {
+    val error = Await.result(for {
+      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().rawConvert("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting categorization" in {
+    val error = Await.result(for {
+      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().categorization("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting detection" in {
+    val error = Await.result(for {
+      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().detection("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting similarity search" in {
+    val error = Await.result(for {
+      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().similaritySearch("illegal")).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Illegal value")
+  }
+  
+  it should "support requesting auto_tagging" in {
+    val error = Await.result(for {
+      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().autoTagging(0.5)).recover{case e => e}
+    } yield e, 10.seconds)
+    error.asInstanceOf[BadRequest].message should include("Must use")
+  }
+  
+  it should "support listing by moderation kind and value" in {
+    Await.result(for {
+      result1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
+      result2 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
+      result3 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
+      apiresult1 <- cloudinary.api.update(result1.public_id, UpdateParameters().moderationStatus(ModerationStatus.approved))
+      apiresult2 <- cloudinary.api.update(result2.public_id, UpdateParameters().moderationStatus(ModerationStatus.rejected))
+      approved <- cloudinary.api.resourcesByModeration(status = ModerationStatus.approved, maxResults = 1000, moderations = true) if result3 != null && apiresult1 != null && apiresult2 != null
+      rejected <- cloudinary.api.resourcesByModeration(status = ModerationStatus.rejected, maxResults = 1000, moderations = true) if result3 != null && apiresult1 != null && apiresult2 != null
+      pending <- cloudinary.api.resourcesByModeration(status = ModerationStatus.pending, maxResults = 1000, moderations = true) if result3 != null && apiresult1 != null && apiresult2 != null
+    } yield {
+      approved.resources.map(_.public_id) should contain(result1.public_id)
+      approved.resources.forall(_.moderationStatus == Some(ModerationStatus.approved)) should be(true)
+      approved.resources.map(_.public_id) should not contain(result2.public_id)
+      approved.resources.map(_.public_id) should not contain(result3.public_id)
+      rejected.resources.map(_.public_id) should contain(result2.public_id)
+      rejected.resources.forall(_.moderationStatus == Some(ModerationStatus.rejected)) should be(true)
+      rejected.resources.map(_.public_id) should not contain(result1.public_id)
+      rejected.resources.map(_.public_id) should not contain(result3.public_id)
+      pending.resources.map(_.public_id) should contain(result3.public_id)
+      pending.resources.forall(_.moderationStatus == Some(ModerationStatus.pending)) should be(true)
+      pending.resources.map(_.public_id) should not contain(result1.public_id)
+      pending.resources.map(_.public_id) should not contain(result2.public_id)
+    }, 10.seconds)
   }
   
   //Remove ignore to test delete all - note use with care!!!

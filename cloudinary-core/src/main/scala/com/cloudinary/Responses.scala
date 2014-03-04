@@ -3,6 +3,7 @@ package com.cloudinary.response
 import java.util.Date
 import org.json4s._
 import org.json4s.DefaultFormats
+import org.json4s.ext.EnumNameSerializer
 import com.cloudinary.Transformation
 import java.text.SimpleDateFormat
 
@@ -15,9 +16,22 @@ case class DerivedInfo(public_id: String, format: String, bytes: Long, id: Strin
 case class DerivedTransformInfo(transformation: String, format: String, bytes: Long, id: String, url: String, secure_url: String)
 case class TransformationInfo(name: String, allowed_for_strict: Boolean, used: Boolean)
 
+object ModerationStatus extends Enumeration {
+  type ModerationStatus = Value
+  val pending, rejected, approved, overridden = Value
+}
+case class ModerationItem(status: ModerationStatus.Value, kind: String, response: Option[String], updated_at: Option[Date])
+
 //Upload API Responses
-case class UploadResponse(public_id: String, url: String, secure_url: String, signature: String, bytes: Int,
-  width: Int, height: Int, format: String, resource_type: String) extends AdvancedResponse with VersionedResponse with TimestampedResponse
+case class UploadResponse(public_id: String, url: String, secure_url: String, signature: String, bytes: Long,
+  resource_type: String) extends AdvancedResponse with VersionedResponse with TimestampedResponse {
+  override implicit val formats = DefaultFormats + new EnumNameSerializer(ModerationStatus)
+  def width:Int = (raw \ "width").extractOpt[Int].getOrElse(0)
+  def height:Int = (raw \ "height").extractOpt[Int].getOrElse(0)
+  def format:String = (raw \ "format").extractOpt[String].getOrElse(null)
+}
+case class LargeRawUploadResponse(public_id: String, url: String, secure_url: String, signature: String, bytes: Long,
+  resource_type: String, upload_id:Option[String], done:Option[Boolean]) extends VersionedResponse with TimestampedResponse
 case class DestroyResponse(result: String) extends RawResponse
 case class ExplicitResponse(public_id: String, version: String, url: String, secure_url: String, signature: String, bytes: Long,
   format: String, eager: List[EagerInfo] = List(), `type`: String) extends RawResponse
@@ -107,8 +121,8 @@ trait TimestampedResponse extends RawResponse {
 }
 
 trait AdvancedResponse extends RawResponse {
-  implicit val formats = DefaultFormats
-
+  implicit val formats = DefaultFormats + new EnumNameSerializer(ModerationStatus)
+  
   lazy val eager: List[EagerInfo] = (for {
     JArray(l) <- raw \ "eager"
     v <- l
@@ -145,5 +159,15 @@ trait AdvancedResponse extends RawResponse {
     case JObject(v) =>
       v.collect({ case (k, JObject(v)) => k -> v.collect({ case (ik, JString(iv)) => ik -> iv }).toMap }).toMap
     case _ => Map()
+  }
+
+  lazy val moderation: List[ModerationItem] = for {
+    JArray(l) <- raw \ "moderation"
+    v <- l
+  } yield v.extract[ModerationItem]
+  
+  lazy val moderationStatus : Option[ModerationStatus.Value] = {
+    val v = raw \ "moderation_status"
+	v.extractOpt[ModerationStatus.Value]
   }
 }

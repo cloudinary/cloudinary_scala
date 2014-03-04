@@ -5,6 +5,7 @@ import scala.concurrent.Future
 import com.ning.http.client.Realm
 import com.ning.http.client.RequestBuilder
 import response._
+import parameters.UpdateParameters
 
 object Api {
   abstract class HttpMethod(val method: String);
@@ -80,26 +81,38 @@ class Api(implicit cloudinary: Cloudinary) {
   def resourceTypes() =
     callApi[ResourceTypesResponse](Api.GET, "resources" :: Nil, Map())
 
-  def resources(nextCursor: Option[String] = None, maxResults: Option[Int] = None, prefix: Option[String] = None, tags: Boolean = false, context: Boolean = false,
+  def resources(nextCursor: Option[String] = None, maxResults: Option[Int] = None, prefix: Option[String] = None, 
+      tags: Boolean = false, context: Boolean = false, moderations: Boolean = false,
     direction: Option[Api.ListDirection] = None, resourceType: String = "image", `type`: Option[String] = None) =
     callApi[ResourcesResponse](Api.GET, "resources" :: resourceType :: `type`.getOrElse("") :: Nil,
-      Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "prefix" -> prefix, "tags" -> tags, "context" -> context, "direction" -> direction.map(_.dir)))
+      Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "prefix" -> prefix, "tags" -> tags, "context" -> context, "moderations" -> moderations, "direction" -> direction.map(_.dir)))
 
   def resourcesByTag(tag: String, nextCursor: Option[String] = None, maxResults: Option[Int] = None, resourceType: String = "image", 
-      direction: Option[Api.ListDirection] = None, tags: Boolean = false, context: Boolean = false) = {
+      direction: Option[Api.ListDirection] = None, tags: Boolean = false, context: Boolean = false, moderations: Boolean = false) = {
     callApi[ResourcesResponse](Api.GET, List("resources", resourceType, "tags", tag),
-      Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "tags" -> tags, "context" -> context, "direction" -> direction.map(_.dir)))
+      Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "tags" -> tags, "context" -> context, "moderations" -> moderations, "direction" -> direction.map(_.dir)))
   }
   
-  def resourcesByIds(publicIds:List[String], tags: Boolean = false, context: Boolean = false,
+  def resourcesByIds(publicIds:List[String], tags: Boolean = false, context: Boolean = false, moderations: Boolean = false,
     resourceType: String = "image", `type`: String = "upload") =
     callApi[ResourcesResponse](Api.GET, "resources" :: resourceType :: `type` :: Nil,
-      Map("public_ids" -> publicIds.mkString(","), "tags" -> tags, "context" -> context))
+      Map("public_ids" -> publicIds.mkString(","), "tags" -> tags, "context" -> context, "moderations" -> moderations))
+  
+  def resourcesByModeration(status:ModerationStatus.Value, kind:String = "manual", 
+      tags: Boolean = false, context: Boolean = false, moderations: Boolean = false,
+      nextCursor: Option[String] = None, maxResults: Option[Int] = None, direction: Option[Api.ListDirection] = None,
+      resourceType: String = "image") =
+    callApi[ResourcesResponse](Api.GET, "resources" :: resourceType :: "moderations" :: kind :: status.toString :: Nil,
+      Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "tags" -> tags, "context" -> context, "moderations" -> moderations, "direction" -> direction.map(_.dir)))    
 
   def resource(publicId: String, derived:Boolean = true, exif: Boolean = false, colors: Boolean = false, faces: Boolean = false, imageMetadata: Boolean = false,
     pages: Boolean = false, maxResults: Option[Int] = None, resourceType: String = "image", `type`: String = "upload") = {
     callApi[ResourceResponse](Api.GET, List("resources", resourceType, `type`, publicId),
       Map("derived" -> derived, "exif" -> exif, "colors" -> colors, "faces" -> faces, "image_metadata" -> imageMetadata, "pages" -> pages, "max_results" -> maxResults));
+  }
+  
+  def update(publicId: String, parameters:UpdateParameters, resourceType: String = "image", `type`: String = "upload") = {
+    callApi[ResourceResponse](Api.POST, List("resources", resourceType, `type`, publicId), parameters.toMap);
   }
 
   def deleteResources(publicIds: Iterable[String], nextCursor:Option[String] = None, keepOriginal: Boolean = false, resourceType: String = "image", `type`: String = "upload") =
