@@ -18,29 +18,27 @@ import com.cloudinary.parameters.UploadParameters
 import com.cloudinary.Implicits._
 
 object PhotosController extends Controller {
-
+  
+  val photos = TableQuery[Photos]
+  
   val photoForm = Form(
     mapping(
       "title" -> nonEmptyText)(PhotoDetails.apply)(PhotoDetails.unapply))
 
   val directUploadForm = Form(
     mapping(
-      "id" -> ignored[Option[Long]](None),
+      "id" -> ignored[Long](0),
       "title" -> nonEmptyText,
       "image" -> of[CloudinaryResource],
       "bytes" -> number,
       "createdAt" -> ignored(DateTime.now))(Photo.apply)(Photo.unapply))
 
-  def photos = DB.withSession { implicit session: Session =>
-    Query(Photos).sortBy(p => p.createdAt.desc).list
-  }
-
-  def photo(id: Long) = DB.withSession { implicit session: Session =>
-    Query(Photos).filter(p => p.id === id).firstOption
+  def photo(id: Long) = DB.withSession {implicit session => 
+    photos.filter(p => p.id === id).firstOption
   }
 
   def index = Action {
-    val ps = photos
+    val ps = DB.withSession{ implicit session => photos.sortBy(p => p.createdAt.desc).list }
     Ok(views.html.index(ps))
   }
 
@@ -64,9 +62,9 @@ object PhotosController extends Controller {
         } else {
           CloudinaryResource.upload(resourceFile.get.ref.file, UploadParameters().faces(true).colors(true).imageMetadata(true).exif(true)).map {
             cr =>
-              val photo = Photo(None, photoDetails.title, cr, cr.data.get.bytes.toInt, DateTime.now)
-              val newPhotoId = DB.withSession { implicit session: Session =>
-                Photos.forInsert returning Photos.id insert photo
+              val photo = Photo(0, photoDetails.title, cr, cr.data.get.bytes.toInt, DateTime.now)
+              val newPhotoId = DB.withSession{ implicit session =>
+                (photos returning photos.map(_.id)) += photo
               }
               Ok(views.html.create(photo, cr.data))
           }
@@ -78,8 +76,8 @@ object PhotosController extends Controller {
     directUploadForm.bindFromRequest.fold(
       formWithErrors => BadRequest(views.html.freshDirect(formWithErrors)),
       photo => {
-        val newPhotoId = DB.withSession { implicit session: Session =>
-          Photos.forInsert returning Photos.id insert photo
+        val newPhotoId = DB.withSession{ implicit session =>
+          (photos returning photos.map(_.id)) += photo
         }
         Ok(views.html.create(photo))
       })

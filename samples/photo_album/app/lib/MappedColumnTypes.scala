@@ -1,17 +1,17 @@
 package lib
 
-import slick.lifted.MappedTypeMapper
+import play.api.db.slick.Config.driver.simple._
+import scala.slick.profile.RelationalProfile
 import java.sql.Timestamp
 import org.joda.time.DateTime
-import slick.lifted.TypeMapper.DateTypeMapper
 import cloudinary.model.CloudinaryResource
 
-object TypeMappers {
-  implicit def date2dateTime = MappedTypeMapper.base[DateTime, Timestamp](
+object MappedColumnTypes {
+  implicit def date2dateTime = MappedColumnType.base[DateTime, Timestamp](
     dateTime => new Timestamp(dateTime.getMillis),
     date => new DateTime(date))
 
-  implicit def cloudinaryResourceToString = MappedTypeMapper.base[CloudinaryResource, String](
+  implicit def cloudinaryResourceToString = MappedColumnType.base[CloudinaryResource, String](
     resource => resource.identifier,
     identifier => CloudinaryResource.stored(identifier))
 }
