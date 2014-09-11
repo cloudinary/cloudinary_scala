@@ -1,16 +1,17 @@
 package com.cloudinary
 
+import scala.language.postfixOps
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import parameters._
 import Implicits._
 import com.cloudinary.response.FaceInfo
 
-class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with Inside {
+class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside {
   lazy val cloudinary = {
     val c = new Cloudinary()
     if (c.getStringConfig("api_key", None).isEmpty) {

@@ -1,10 +1,11 @@
 package com.cloudinary
 
+import scala.language.postfixOps
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import java.net.URI
 
-class CloudinarySpec extends FlatSpec with ShouldMatchers with OptionValues with Inside {
+class CloudinarySpec extends FlatSpec with Matchers with OptionValues with Inside {
   lazy val cloudinary = {
     new Cloudinary("cloudinary://a:b@test123")
   }

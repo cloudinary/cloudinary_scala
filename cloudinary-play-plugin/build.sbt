@@ -6,7 +6,7 @@ name := "cloudinary-scala-play"
 
 organization := "com.cloudinary"
 
-version := "0.9.3-SNAPSHOT"
+version := "0.9.4-SNAPSHOT"
 
 resolvers += "sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
@@ -14,7 +14,7 @@ resolvers += "sonatype releases" at "https://oss.sonatype.org/content/repositori
 
 resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 
-libraryDependencies ++= Seq("com.cloudinary" %% "cloudinary-core-scala" % "0.9.3-SNAPSHOT")    
+libraryDependencies ++= Seq("com.cloudinary" %% "cloudinary-core-scala" % "0.9.4-SNAPSHOT")    
 
 pomExtra := {
   <url>http://cloudinary.com</url>
