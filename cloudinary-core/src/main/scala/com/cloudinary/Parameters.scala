@@ -3,60 +3,39 @@ package com.cloudinary.parameters
 import com.cloudinary.Transformation
 import com.cloudinary.EagerTransformation
 import com.cloudinary.response.FaceInfo
+import com.cloudinary.response.CustomCoordinate
 import com.cloudinary.response.ModerationStatus
 
-trait ParamFactory[T <: ParamFactory[T] ] { self:T =>
-  def toMap:Map[String,String] = parameters.filterNot(p => p._2.isEmpty())
-  def parameters: Map[String, String]
-  protected def param(key:String, value:String): T
-}
+private [cloudinary] case class FacesInfo(faces:Iterable[FaceInfo])
+private [cloudinary] case class CustomCoordinates(coordinates:Iterable[CustomCoordinate])
+private [cloudinary] case class ContextMap(context:Map[String, String])
+private [cloudinary] case class HeaderMap(headers:Map[String, String])
+private [cloudinary] case class Transformations(transformations:List[Transformation])
+private [cloudinary] case class StringSet(values:Iterable[String])
 
-trait UpdateableResourceParams[T <: UpdateableResourceParams[T]] extends ParamFactory[T] { self:T =>
+trait ParamFactory {
+  def toMap:Map[String,String] = parameters.collect{
+      case (k, FacesInfo(v)) => k -> v.map(i => s"${i.x},${i.y},${i.width},${i.height}").mkString("|")
+      case (k, CustomCoordinates(v)) => k -> v.map(i => s"${i.x},${i.y},${i.width},${i.height}").mkString("|")
+      case (k, ContextMap(v)) => k -> v.map(kv => s"${kv._1}=${kv._2}").mkString("|")
+      case (k, HeaderMap(v)) => k -> v.map(kv => s"${kv._1}: ${kv._2}").mkString("\n")
+      case (k, StringSet(v)) => k -> v.mkString(",")
+      case (k, v:Transformation) => k -> v.generate
+      case (k, Transformations(v)) => k -> buildEager(v)
+      case (k, v) => k -> v.toString
+  }.filterNot(p => p._2.isEmpty())
 
-  def headers(value:Map[String, String]) = param("headers" , value.map(kv => s"${kv._1}: ${kv._2}").mkString("\n"))
-  def tags(value:Set[String]) = param("tags" , value.mkString(","))
-  def faceCoordinates(value:List[FaceInfo]) = param("face_coordinates" , value.map(i => s"${i.x},${i.y},${i.width},${i.height}").mkString("|"))
-  def context(value:Map[String, String]) = param("context" , value.map(kv => s"${kv._1}=${kv._2}").mkString("|"))
-  def ocr(source:String) = param("ocr", source)
-  def rawConvert(source:String) = param("raw_convert", source)
-  def categorization(source:String) = param("categorization", source)
-  def detection(source:String) = param("detection", source)
-  def similaritySearch(source:String) = param("similarity_search", source)
-  def autoTagging(threshold:Double) = param("auto_tagging", threshold.toString)
-}
+  def apply(key:String) = unboxedValue(parameters(key))
+  def get(key:String) = parameters.get(key).map(unboxedValue)
 
-case class UpdateParameters(parameters: Map[String, String] = Map()) extends UpdateableResourceParams[UpdateParameters]{
-  protected def param(key:String, value:String) = UpdateParameters(parameters + (key -> value))
-  def moderationStatus(status:ModerationStatus.Value) = param("moderation_status", status.toString)
-}
+  def apply(key:String, value: Any) = param(key, value)
 
-case class UploadParameters(parameters: Map[String, String] = Map()) extends UpdateableResourceParams[UploadParameters] {
-  protected def param(key:String, value:String) = UploadParameters(parameters + (key -> value))
-  def transformation(value:Transformation) = param("transformation", value.generate)
-  def publicId(value:String) = param("public_id" , value)
-  def callback(value:String) = param("callback" , value)
-  def format(value:String) = param("format" , value)
-  def `type`(value:String) = param("type" , value)
-  def eager(value:List[Transformation]) = param("eager" , buildEager(value))  
-  def notificationUrl(value:String) = param("notification_url" , value)
-  def eagerNotificationUrl(value:String) = param("eager_notification_url" , value)
-  def proxy(value:String) = param("proxy" , value)
-  def folder(value:String) = param("folder" , value)
-  def backup(backup:Boolean) = param("backup" , backup.toString)
-  def exif(value:Boolean) = param("exif" , value.toString)
-  def faces(value:Boolean) = param("faces" , value.toString)
-  def colors(value:Boolean) = param("colors" , value.toString)
-  def useFilename(value:Boolean) = param("use_filename" , value.toString)
-  def uniqueFilename(value:Boolean) = param("unique_filename" , value.toString)
-  def invalidate(value:Boolean) = param("invalidate" , value.toString)
-  def discardOriginalFilename(value:Boolean) = param("discard_original_filename" , value.toString)
-  def overwrite(value:Boolean) = param("overwrite" , value.toString)
-  def imageMetadata(value:Boolean) = param("image_metadata" , value.toString)
-  def eagerAsync(value:Boolean) = param("eager_async" , value.toString)
-  def allowedFormats(value:Set[String]) = param("allowed_formats" , value.mkString(","))
-  def moderation(kind:String) = param("moderation", kind)
+  def parameters: Map[String, _]
   
-
+  type Self
+  protected def factory: Map[String,_] => Self
+  protected def param(key:String, value:Any):Self = factory(parameters + (key -> value))
+  
   private def buildEager(transformations: Iterable[Transformation]): String =
     transformations.map {
       transformation: Transformation =>
@@ -66,13 +45,78 @@ case class UploadParameters(parameters: Map[String, String] = Map()) extends Upd
           case _ => transformationString
         }
     }.mkString("|")
+
+  private def unboxedValue(value: Any) = value match {
+    case FacesInfo(v) => v
+    case CustomCoordinates(v) => v
+    case ContextMap(v) => v
+    case HeaderMap(v) => v
+    case StringSet(v) => v
+    case Transformations(v) => v
+    case v => v
+  }
 }
 
-case class LargeUploadParameters(parameters: Map[String, String] = Map()) extends ParamFactory[LargeUploadParameters] {
-  protected def param(key:String, value:String) = LargeUploadParameters(parameters + (key -> value))
+trait UpdateableResourceParams extends ParamFactory {
+  def headers(value:Map[String, String]) = param("headers" , HeaderMap(value))
+  def tags(value:Set[String]) = param("tags" , StringSet(value))
+  def faceCoordinates(value:List[FaceInfo]) = param("face_coordinates" , FacesInfo(value))
+  def customCoordinates(value:List[CustomCoordinate]) = param("custom_coordinates" , CustomCoordinates(value))
+  def context(value:Map[String, String]) = param("context" , ContextMap(value))
+  def rawConvert(source:String) = param("raw_convert", source)
+  def categorization(source:String) = param("categorization", source)
+  def detection(source:String) = param("detection", source)
+  def backgroundRemoval(source:String) = param("background_removal", source)
+  def autoTagging(threshold:Double) = param("auto_tagging", threshold)
+}
+
+trait UploadableResourceParams extends ParamFactory {
+  def transformation(value:Transformation) = param("transformation", value)
+  def publicId(value:String) = param("public_id" , value)
+  def callback(value:String) = param("callback" , value)
+  def format(value:String) = param("format" , value)
+  def `type`(value:String) = param("type" , value)
+  def eager(value:List[Transformation]) = param("eager" , Transformations(value))  
+  def notificationUrl(value:String) = param("notification_url" , value)
+  def eagerNotificationUrl(value:String) = param("eager_notification_url" , value)
+  def proxy(value:String) = param("proxy" , value)
+  def folder(value:String) = param("folder" , value)
+  def backup(backup:Boolean) = param("backup" , backup)
+  def exif(value:Boolean) = param("exif" , value)
+  def faces(value:Boolean) = param("faces" , value)
+  def colors(value:Boolean) = param("colors" , value)
+  def useFilename(value:Boolean) = param("use_filename" , value)
+  def uniqueFilename(value:Boolean) = param("unique_filename" , value)
+  def invalidate(value:Boolean) = param("invalidate" , value)
+  def discardOriginalFilename(value:Boolean) = param("discard_original_filename" , value)
+  def overwrite(value:Boolean) = param("overwrite" , value)
+  def imageMetadata(value:Boolean) = param("image_metadata" , value)
+  def eagerAsync(value:Boolean) = param("eager_async" , value)
+  def allowedFormats(value:Set[String]) = param("allowed_formats" , StringSet(value))
+  def moderation(kind:String) = param("moderation", kind)
+  def pHash(value:Boolean) = param("phash", value)
+  def uploadPreset(value:String) = param("upload_preset", value)
+  def disallowPublicId(value:Boolean) = param("disallow_public_id", value)
+  def returnDeleteToken(value:Boolean) = param("return_delete_token", value)
+}
+
+case class UpdateParameters(parameters: Map[String, _] = Map()) extends UpdateableResourceParams{
+  type Self = UpdateParameters
+  protected val factory = UpdateParameters.apply _
+  def moderationStatus(status:ModerationStatus.Value) = param("moderation_status", status.toString)
+}
+
+case class UploadParameters(parameters: Map[String, _] = Map(), signed:Boolean = true) extends UploadableResourceParams with UpdateableResourceParams {
+  type Self = UploadParameters
+  protected val factory = (p: Map[String, _]) => UploadParameters(p, signed)
+}
+
+case class LargeUploadParameters(parameters: Map[String, _] = Map()) extends ParamFactory {
+  type Self = LargeUploadParameters
+  protected val factory = LargeUploadParameters.apply _
   def `type`(value:String) = param("type" , value)
   def publicId(value:String) = param("public_id" , value)
-  def backup(backup:Boolean) = param("backup" , backup.toString)
+  def backup(backup:Boolean) = param("backup" , backup)
   def uploadId(value:String) = param("upload_id" , value)
 }
 

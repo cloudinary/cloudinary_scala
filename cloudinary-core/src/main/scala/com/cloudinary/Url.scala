@@ -17,7 +17,11 @@ case class Url(
   version: Option[String] = None,
   transformation: Option[Transformation] = None,
   signUrl: Boolean = false,
-  apiSecret: Option[String] = None) {
+  apiSecret: Option[String] = None,
+  defaultResponsive: Boolean = false,
+  responsiveTransformation: Option[String] = None,
+  responsivePlaceholder: Option[String] = None,
+  defaultDPR: Option[String] = None) {
   def this(cloudinary: Cloudinary) {
     this(
       cloudName = cloudinary.getStringConfig("cloud_name").get,
@@ -28,7 +32,12 @@ case class Url(
       cdnSubdomain = cloudinary.getBooleanConfig("cdn_subdomain", false),
       shorten = cloudinary.getBooleanConfig("shorten", false),
       signUrl = cloudinary.getBooleanConfig("sign_url", false),
-      apiSecret = cloudinary.getStringConfig("api_secret"))
+      apiSecret = cloudinary.getStringConfig("api_secret"),
+      defaultResponsive = cloudinary.getBooleanConfig("responsive_width", false),
+      responsiveTransformation = cloudinary.getStringConfig("responsive_transformation"),
+      responsivePlaceholder = cloudinary.getStringConfig("responsive_placeholder"),
+      defaultDPR = cloudinary.getStringConfig("dpr")
+    )
   }
 
   def `type`(t: String): Url = copy(`type` = t)
@@ -86,7 +95,16 @@ case class Url(
       format = None
     }
 
-    val transformationStr = trns.map(_.generate())
+    val transformationStr = trns.map{ ot =>
+      var t = defaultDPR.map{dpr => ot.dpr(dpr)}.getOrElse(ot)
+      if (defaultResponsive) t = t.responsiveWidth(true)
+      val str = t.generate
+      if (t.isResponsive && !t.hasWidthAuto) {
+        str + "/"+responsiveTransformation.getOrElse("c_limit,w_auto")
+      } else {
+        str
+      }
+    }
     val prefix = getPrefix(source)
 
     if (shorten && resourceType.equals("image") && `type`.equals("upload")) {
@@ -134,12 +152,29 @@ case class Url(
   }
 
   def imageTag(source: String, attributes: Map[String, String] = Map()) = {
-    val url = generate(source)
-    val attributesHtml =
-      attributes.map(p => p._1 + "=\"" + p._2 + "\"").toList.sorted.mkString(" ") +
+    var url = generate(source)
+    val isResponsive = transformation.map(_.isResponsive).getOrElse(false)
+    val isHiDPI = transformation.map(_.isHiDPI).getOrElse(false)
+    val placeHolder = attributes.get("responsive_placeholder").orElse(responsivePlaceholder) match {
+      case Some("blank") => Some("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+      case Some(p) => Some(p)
+      case _ => None
+    }
+    val attributesHtml = ((attributes - "class" - "responsive_placeholder") ++ (attributes.get("class") match {
+      case Some(cls) if isResponsive => List(("class", s"$cls cld-responsive"))
+      case Some(cls) if isHiDPI => List(("class", s"$cls cld-hidpi"))
+      case None if isResponsive => List(("class", "cld-responsive"))
+      case None if isHiDPI => List(("class", "cld-hidpi"))
+      case Some(cls) => List(("class", cls))
+      case _ => List()
+    }) ++ (placeHolder match {
+      case Some(ph) if isResponsive || isHiDPI => List(("src", ph),("data-src", url))
+      case None if isResponsive || isHiDPI => List(("data-src", url))
+      case _ => List(("src", url))
+    })).collect{case (attr, value) => s"""$attr="$value""""}.toList.sorted.mkString(" ") +
         transformation.flatMap(_.htmlHeight.map(h => s""" height="$h"""")).getOrElse("") +
         transformation.flatMap(_.htmlWidth.map(w => s""" width="$w"""")).getOrElse("")
-    s"""<img src="$url" $attributesHtml />"""
+    s"""<img $attributesHtml />"""
   }
 
 }

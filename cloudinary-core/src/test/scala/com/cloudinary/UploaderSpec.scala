@@ -1,16 +1,19 @@
 package com.cloudinary
 
+import scala.language.postfixOps
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Success
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import parameters._
+import response._
 import Implicits._
-import com.cloudinary.response.FaceInfo
 
-class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with Inside {
+object UploadPresetTest extends Tag("com.cloudinary.tags.UploadPresetTest")
+
+class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside {
   lazy val cloudinary = {
     val c = new Cloudinary()
     if (c.getStringConfig("api_key", None).isEmpty) {
@@ -229,41 +232,27 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
     }, 10.seconds)
   }
   
-  it should "support requesting ocr info" in {
-    val error = Await.result(for {
-      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().ocr("illegal")).recover{case e => e}
-    } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Illegal value")
-  }
-  
   it should "support requesting raw conversion" in {
     val error = Await.result(for {
       e <- cloudinary.uploader().upload("src/test/resources/docx.docx", UploadParameters().rawConvert("illegal"), "raw").recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Illegal value")
+    error.asInstanceOf[BadRequest].message should include("not a valid")
   }
   
   it should "support requesting categorization" in {
     val error = Await.result(for {
       e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().categorization("illegal")).recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Illegal value")
+    error.asInstanceOf[BadRequest].message should include("not a valid")
   }
   
   it should "support requesting detection" in {
     val error = Await.result(for {
       e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().detection("illegal")).recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Illegal value")
+    error.asInstanceOf[BadRequest].message should include("not a valid")
   }
-  
-  it should "support requesting similarity search" in {
-    val error = Await.result(for {
-      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().similaritySearch("illegal")).recover{case e => e}
-    } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Illegal value")
-  }
-  
+    
   it should "support requesting auto_tagging" in {
     val error = Await.result(for {
       e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().autoTagging(0.5)).recover{case e => e}
@@ -278,5 +267,15 @@ class UploaderSpec extends FlatSpec with ShouldMatchers with OptionValues with I
       response.bytes should equal(new java.io.File("src/test/resources/docx.docx").length())
       response.done should equal(Some(true))
     }, 10.seconds)
+  }
+
+  it should "support unsigned uploading using presets" taggedAs(UploadPresetTest) in {
+    val c = cloudinary.withConfig(Map("api_key" -> null, "api_secret" -> null)) 
+    val (presetName, uploadResult) = Await.result(for {
+      preset <- cloudinary.api.createUploadPreset(UploadPreset(unsigned = true, settings = UploadParameters().folder("upload_folder")))
+      result <- c.uploader.unsignedUpload("src/test/resources/logo.png", preset.name)
+    } yield (preset.name, result), 10.seconds)
+    uploadResult.public_id should fullyMatch regex "upload_folder/[a-z0-9]+"
+    Await.result(cloudinary.api.deleteUploadPreset(presetName), 5.seconds)
   }
 }

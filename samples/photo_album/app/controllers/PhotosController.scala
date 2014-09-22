@@ -50,6 +50,21 @@ object PhotosController extends Controller {
     Ok(views.html.freshDirect(directUploadForm))
   }
 
+  def freshUnsignedDirect = Action {
+    // Preset creation does not really belong here - it's just here for the sample to work. 
+    // The preset should be created offline
+    val cp = current.plugin[cloudinary.plugin.CloudinaryPlugin].get
+    val cld = cp.cloudinary
+
+    val presetName = "sample_" + com.cloudinary.Cloudinary.apiSignRequest(
+        Map("api_key" -> cld.getStringConfig("api_key")), cld.getStringConfig("api_secret").get
+      ).substring(0, 10)
+
+    cld.api.createUploadPreset(com.cloudinary.response.UploadPreset(presetName, true, UploadParameters().folder("preset_folder")))
+
+    Ok(views.html.freshUnsignedDirect(directUploadForm, presetName))
+  }
+
   def create = Action.async { implicit request =>
     photoForm.bindFromRequest.fold(
       formWithErrors => future { BadRequest(views.html.fresh(formWithErrors)) },

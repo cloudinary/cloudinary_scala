@@ -24,17 +24,17 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     cloudinary.signRequest(paramsAndTimeStamp)
   }
 
-  def createRequest(action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image") = {
+  def createRequest(action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image", signed:Boolean = true) = {
     val params = Util.definedMap(optionalParams)
 
-    val signedParams = signRequestParams(params)
+    val processedParams = if (signed) signRequestParams(params) else params
 
     val apiUrl = cloudinary.cloudinaryApiUrl(action, resourceType)
 
     val apiUrlBuilder = new RequestBuilder("POST")
     apiUrlBuilder.setUrl(apiUrl)
 
-    signedParams foreach {
+    processedParams foreach {
       param =>
         val (k, v) = param
         v match {
@@ -62,8 +62,8 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     apiUrlBuilder.build()
   }
 
-  def callApi[T](action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image")(implicit mf: scala.reflect.Manifest[T]): Future[T] = {
-    val request = createRequest(action, optionalParams, file, resourceType)
+  def callApi[T](action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image", signed:Boolean = true)(implicit mf: scala.reflect.Manifest[T]): Future[T] = {
+    val request = createRequest(action, optionalParams, file, resourceType, signed)
     HttpClient.executeAndExtractResponse[T](request)
   }
 
@@ -81,8 +81,12 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     callApi[TagResponse]("tags", params, null);
   }
 
+  def unsignedUpload(file: AnyRef, uploadPreset:String, params: UploadParameters = UploadParameters(), resourceType: String = "image") = {
+    upload(file, params.uploadPreset(uploadPreset).copy(signed = false), resourceType)
+  }
+
   def upload(file: AnyRef, params: UploadParameters = UploadParameters(), resourceType: String = "image") = {
-    callApi[UploadResponse]("upload", params.toMap, file, resourceType)
+    callApi[UploadResponse]("upload", params.toMap, file, resourceType, params.signed)
   }
 
   def uploadLargeRaw(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), bufferSize: Int = 20000000) = {
@@ -220,14 +224,17 @@ class Uploader(implicit val cloudinary: Cloudinary) {
 
   private def escapeHtml(s: Any) = xml.Utility.escape(s.toString)
 
-  def imageUploadTag(field: String, uploadParameters: UploadParameters, paramHtmlOptions: Map[String, Any] = Map(), resourceType: String = "image") = {
+  def unsignedImageUploadTag(field: String, preset:String, uploadParameters: UploadParameters = UploadParameters(), paramHtmlOptions: Map[String, Any] = Map(), resourceType: String = "image") = 
+    imageUploadTag(field, uploadParameters.uploadPreset(preset).copy(signed = false), paramHtmlOptions, resourceType)
+
+  def imageUploadTag(field: String, uploadParameters: UploadParameters = UploadParameters(), paramHtmlOptions: Map[String, Any] = Map(), resourceType: String = "image") = {
     val htmlOptions = if (paramHtmlOptions == null) Map[String, Any]() else paramHtmlOptions
     val htmlOptionsString = htmlOptions
       .filterNot(p => p._2 == null || p._1 == "class")
       .mapValues(escapeHtml)
       .map(p => { p._1 } + "=\"" + p._2 + "\"").mkString(" ")
     val classes = ("cloudinary-fileupload" :: htmlOptions.filter(_._1 == "class").values.toList).map(escapeHtml).mkString(" ")
-    val tagParams = escapeHtml(uploadTagParams(uploadParameters.toMap, resourceType))
+    val tagParams = escapeHtml(uploadTagParams(uploadParameters.toMap, resourceType, uploadParameters.signed))
     val cloudinaryUploadUrl = cloudinary.cloudinaryApiUrl("upload", resourceType)
 
     s"""
@@ -240,7 +247,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
 """
   }
 
-  protected def uploadTagParams(paramOptions: Map[String, Any] = Map(), resourceType: String = "image") = {
+  protected def uploadTagParams(paramOptions: Map[String, Any] = Map(), resourceType: String = "image", signed:Boolean = true) = {
     var options = paramOptions
 
     val callback = options.get("callback") match {
@@ -253,9 +260,9 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     options = options + ("callback" -> callback.get)
 
     val params = Util.definedMap(options)
-    val signedParams = signRequestParams(params)
+    val processedParams = if (signed) signRequestParams(params) else params
 
-    compact(render(signedParams.mapValues(_.toString) + ("resource_type" -> resourceType)))
+    compact(render(processedParams.mapValues(_.toString) + ("resource_type" -> resourceType)))
   }
 
   private[cloudinary] val illegalFileName = "https?:.*|s3:.*|data:[^;]*;base64,([a-zA-Z0-9/+\n=]+)"

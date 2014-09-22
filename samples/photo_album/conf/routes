@@ -6,6 +6,7 @@
 GET     /		                    controllers.PhotosController.index
 GET     /photos/new                 controllers.PhotosController.fresh
 GET     /photos/new_direct          controllers.PhotosController.freshDirect
+GET     /photos/new_unsigned_direct          controllers.PhotosController.freshUnsignedDirect
 POST    /photos                     controllers.PhotosController.create
 POST    /photos_direct              controllers.PhotosController.createDirect
 

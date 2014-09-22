@@ -1,0 +1,11 @@
+@(field: play.api.data.Field, preset:String, uploadParameters:com.cloudinary.parameters.UploadParameters, paramHtmlOptions: (Symbol,Any)*)
+
+@import play.api.Play.current
+@import cloudinary.plugin.CloudinaryPlugin
+
+@current.plugin[CloudinaryPlugin].map { p =>
+  @Html(p.cloudinary.uploader().unsignedImageUploadTag(field.name, preset, uploadParameters, paramHtmlOptions.map(p => p._1.toString -> p._2).toMap))
+  @if(field.value != null){
+    <input type="hidden" name="@field.name" value="@field.value">
+  }
+}

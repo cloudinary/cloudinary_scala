@@ -1,10 +1,11 @@
 package com.cloudinary
 
+import scala.language.postfixOps
 import org.scalatest._
-import org.scalatest.matchers.ShouldMatchers
+import org.scalatest.Matchers
 import java.net.URI
 
-class CloudinarySpec extends FlatSpec with ShouldMatchers with OptionValues with Inside {
+class CloudinarySpec extends FlatSpec with Matchers with OptionValues with Inside {
   lazy val cloudinary = {
     new Cloudinary("cloudinary://a:b@test123")
   }
@@ -107,9 +108,30 @@ class CloudinarySpec extends FlatSpec with ShouldMatchers with OptionValues with
 
   it should "support image tag generation with matching width and height" in {
     cloudinary.url()
-      .transformation(new Transformation().w_(100).h_(101).c_("crop"))
+      .transformation(Transformation().w_(100).h_(101).c_("crop"))
       .imageTag("test", Map("alt" -> "my image")) should equal(
-        "<img src=\"http://res.cloudinary.com/test123/image/upload/c_crop,h_101,w_100/test\" alt=\"my image\" height=\"101\" width=\"100\" />")
+        "<img alt=\"my image\" src=\"http://res.cloudinary.com/test123/image/upload/c_crop,h_101,w_100/test\" height=\"101\" width=\"100\" />")
+
+    cloudinary.url()
+      .transformation(Transformation().w_(0.9).h_(0.9).c_("crop").responsiveWidth(true))
+      .imageTag("test", Map("alt" -> "my image")) should equal(
+        "<img alt=\"my image\" class=\"cld-responsive\" data-src=\"http://res.cloudinary.com/test123/image/upload/c_crop,h_0.9,w_0.9/c_limit,w_auto/test\" />")
+
+    cloudinary.url()
+      .transformation(Transformation().w_(0.9).h_(0.9).c_("crop").responsiveWidth(true))
+      .imageTag("test", Map("alt" -> "my image", "class" -> "extra")) should equal(
+        "<img alt=\"my image\" class=\"extra cld-responsive\" data-src=\"http://res.cloudinary.com/test123/image/upload/c_crop,h_0.9,w_0.9/c_limit,w_auto/test\" />")
+
+    cloudinary.url()
+      .transformation(Transformation().width("auto").crop("crop"))
+      .imageTag("test", Map("alt" -> "my image", "responsive_placeholder" -> "blank")) should equal(
+        "<img alt=\"my image\" class=\"cld-responsive\" data-src=\"http://res.cloudinary.com/test123/image/upload/c_crop,w_auto/test\" src=\"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\" />")
+    
+    cloudinary.url()
+      .transformation(Transformation().width("auto").crop("crop"))
+      .imageTag("test", Map("alt" -> "my image", "responsive_placeholder" -> "other.gif")) should equal(
+        "<img alt=\"my image\" class=\"cld-responsive\" data-src=\"http://res.cloudinary.com/test123/image/upload/c_crop,w_auto/test\" src=\"other.gif\" />")
+
   }
 
   it should "add version if public_id contains" in {

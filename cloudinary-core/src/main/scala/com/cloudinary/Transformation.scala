@@ -1,6 +1,9 @@
 package com.cloudinary
 
 case class Transformation(val transformations:List[Map[String, Any]] = List(Map[String, Any]())) {
+
+	private val defaultResponsiveWidthTransformation:String = "c_limit,w_auto"
+
 	protected def transformation:Map[String, Any] = transformations.last
 
 	def this(transformation:Transformation) {		
@@ -50,6 +53,17 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 	def w_(value:Float) = width(value)
 	def width(value:Double) = param("width", value)
 	def w_(value:Double) = width(value)
+
+	/**
+	 * The required width in pixels of a transformed image or an overlay. 
+	 * Can be specified separately or together with the height value.
+	 */
+	def width(value:String) = value match {
+		case "auto" => 
+			param("width", value).responsiveWidth(true)
+		case i => param("width", Integer.parseInt(i, 10))
+	}
+	def w_(value:String) = width(value)
 	
 	/**
 	 * The required height in pixels of a transformed image or an overlay.
@@ -217,6 +231,18 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 	 */
 	def flags(value:String*) = param("flags", value)
 	def fl_(value:String*) = param("flags", value)
+
+	/**
+	 * DPR - Device Pixel Ratio
+	 */
+	def dpr(value:Int) = param("dpr", value)
+	def dpr(value:Float) = param("dpr", value)
+	def dpr(value:String) = param("dpr", value)
+
+	/**
+	 * Sets explicitly whether this transformation has responsive width
+	 */
+	def responsiveWidth(value: Boolean) = param("responsive_width", value)
 	
 	/**
 	 * Returns the detected width to be embedded in a HTML IMG tag based on 
@@ -230,8 +256,7 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 	 */
 	def htmlHeight:Option[Int] = getPixelSize("height")
 
-	def generate():String = 
-		transformations.map(generate).mkString("/")
+	def generate():String = transformations.map(generate).mkString("/")
 
 	protected def generate(options:Map[String, Any]):String = {
 		val angle = optionalList(options.get("angle"))
@@ -251,11 +276,11 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 			"w", "width", "h", "height", "x", "x", "y", "y", "r", "radius", "d", "default_image", 
 			"g", "gravity", "cs", "color_space", "p", "prefix", "l", "overlay", "u", "underlay", 
 			"f", "fetch_format", "dn", "density", "pg", "page", "dl", "delay", "e", "effect", 
-			"bo", "border", "q", "quality", "c", "crop"
+			"bo", "border", "q", "quality", "c", "crop", "dpr", "dpr"
 		).grouped(2).map {
 		  p => p.head -> options.getOrElse(p.last, "")
 		}.filter(p => p._2 != "" && p._2 != null).toMap
-		
+
 		val components = (params ++ simpleParams)
 			.filter(p => p._2 != "" && p._2 != null)
 			.map(p => p._1 + "_" + p._2)
@@ -282,6 +307,21 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 	  }
 	  if (foundSizeNuller) None else size
 	}
+
+	private[cloudinary] def isResponsive = transformations.exists{_.get("responsive_width") match {
+		case Some(true) => true
+		case _ => false
+	}}
+
+	private[cloudinary] def hasWidthAuto = transformations.exists{_.get("width") match {
+		case Some("auto") => true
+		case _ => false
+	}}
+
+	private[cloudinary] def isHiDPI = transformations.exists{_.get("dpi") match {
+		case Some("auto") => true
+		case _ => false
+	}}
 	
 	protected def hasInt(transformation:Map[String, Any], key:String) = transformation.get(key) match {
 	    case Some(x:Int) => true

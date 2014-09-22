@@ -39,12 +39,6 @@ object Cloudinary {
 
   private final val RND = new SecureRandom();
 
-  def randomPublicId() = {
-    val bytes = new Array[Byte](8);
-    RND.nextBytes(bytes);
-    bytes2Hex(bytes);
-  }
-
   def signedPreloadedImage(result: Map[String, _]): String =
     (for {
       resourceType <- result.get("resource_type")
@@ -79,7 +73,13 @@ object Cloudinary {
     md.digest((toSign + apiSecret).getBytes());
   }
 
-  def asString(value: Any, defaultValue: Option[String] = None): Option[String] =
+  private[cloudinary] def randomPublicId() = {
+    val bytes = new Array[Byte](8);
+    RND.nextBytes(bytes);
+    bytes2Hex(bytes);
+  }
+
+  private[cloudinary] def asString(value: Any, defaultValue: Option[String] = None): Option[String] =
     value match {
       case null => defaultValue
       case "" => defaultValue
@@ -90,14 +90,14 @@ object Cloudinary {
       case _ => Some(value.toString())
     }
 
-  def asBoolean(value: Option[_]): Option[Boolean] = {
+  private[cloudinary] def asBoolean(value: Option[_]): Option[Boolean] = {
     value collect {
       case v: Boolean => v
-      case x: String => "true".equals(x)
+      case x: String => "true" == x
     }
   }
 
-  def asBoolean(value: Any, defaultValue: Boolean): Boolean = {
+  private[cloudinary] def asBoolean(value: Any, defaultValue: Boolean): Boolean = {
     value match {
       case null => defaultValue
       case x: Option[_] => x match {
@@ -105,9 +105,11 @@ object Cloudinary {
         case None => defaultValue
       }
       case v: Boolean => v
-      case x @ _ => "true".equals(value)
+      case x @ _ => "true" == value
     }
   }
+
+  private[cloudinary] def cleanupEmpty(params: Map[String, Any]) = params.filterNot(p => Cloudinary.emptyValue(p._2))
 
   private def emptyValue(v: Any): Boolean = v match {
     case null => true
@@ -172,7 +174,7 @@ class Cloudinary(config: Map[String, Any]) {
   def signRequest(params: Map[String, Any]): Map[String, Any] = {
     val key = apiKey()
     val secret = apiSecret()
-    val filteredParams = params.filterNot(p => Cloudinary.emptyValue(p._2))
+    val filteredParams = Cloudinary.cleanupEmpty(params)
     filteredParams +
       ("signature" -> Cloudinary.apiSignRequest(filteredParams, secret)) +
       ("api_key" -> key)
