@@ -6,9 +6,9 @@ sonatypeSettings
 
 organization := "com.cloudinary"
 
-version := "0.9.2-SNAPSHOT"
+version := "0.9.4-SNAPSHOT"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.1"
 
 crossScalaVersions := Seq("2.10.4", "2.11.1")
 
@@ -40,9 +40,10 @@ pomExtra := {
 libraryDependencies ++= Seq(
   "com.ning" % "async-http-client" % "1.7.19",
   "org.json4s" %% "json4s-native" % "3.2.10",
-  "org.json4s" %% "json4s-ext" % "3.2.10",
-  "org.scalatest" %% "scalatest" % "2.2.0" % "test")
+  "org.json4s" %% "json4s-ext" % "3.2.10", 
+  "org.scalatest" %% "scalatest" % "2.2.1" % "test")
 
 resolvers ++= Seq("sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots", "sonatype releases" at "https://oss.sonatype.org/content/repositories/releases")
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
+

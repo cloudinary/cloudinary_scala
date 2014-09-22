@@ -11,6 +11,7 @@ import parameters._
 import response._
 import Implicits._
 
+
 object UploadPresetTest extends Tag("com.cloudinary.tags.UploadPresetTest")
 
 class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside {

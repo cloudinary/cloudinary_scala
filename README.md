@@ -15,13 +15,15 @@ For Scala, Cloudinary provides a library for simplifying the integration even fu
 
 ## Setup ######################################################################
 
-The cloudinary_scala library is available in [Maven Central](http://repo1.maven.org/maven/). To use it, add the following dependency to your `build.sbt`:
-
-    libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % "0.9.2-SNAPSHOT"
+The cloudinary_scala library is available on the [Sonatype snapshots repository](https://oss.sonatype.org/content/repositories/snapshots). To use it, add the following dependency to your `build.sbt`:
+    
+    resolvers += "sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+    
+    libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % "0.9.4-SNAPSHOT"
 
 If using the [Play 2](http://www.playframework.com/) you can add:
 
-    "com.cloudinary" %% "cloudinary-scala-play" % "0.9.2-SNAPSHOT"
+    "com.cloudinary" %% "cloudinary-scala-play" % "0.9.4-SNAPSHOT"
 
 to the list of play dependencies. You'll also need to register the plugin in `conf/play.plugins`:
 
