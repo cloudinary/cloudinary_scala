@@ -223,7 +223,10 @@ class Cloudinary(config: Map[String, Any]) {
   def zipDownloadUrl(tag: String, resourceType: String = "image") = zipDownload(tag, resourceType).getUrl()
 
   def getBooleanConfig(key: String, defaultValue: Boolean): Boolean =
-    return Cloudinary.asBoolean(config.getOrElse(key, null), defaultValue)
+    Cloudinary.asBoolean(config.getOrElse(key, null), defaultValue)
+
+  def getOptionalBooleanConfig(key: String): Option[Boolean] =
+    Cloudinary.asBoolean(config.get(key))
 
   def getStringConfig(key: String, defaultValue: Option[String] = None): Option[String] =
     Cloudinary.asString(config.getOrElse(key, null), defaultValue)
