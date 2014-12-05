@@ -107,6 +107,9 @@ case class UploadPresetCreateResponse(message: String, name:String)
 
 case class TagsResponse(tags: List[String], next_cursor: Option[String]) extends RawResponse
 
+case class FolderInfo(name:String, path:String)
+case class FolderListResponse(folders: List[FolderInfo])
+
 //Shared
 case class ResourceResponse(public_id: String, url: String, secure_url: String, bytes: Int,
   width: Int, height: Int, format: String, resource_type: String, `type`: String,

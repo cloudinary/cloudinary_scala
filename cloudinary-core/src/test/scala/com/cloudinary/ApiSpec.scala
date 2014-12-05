@@ -362,6 +362,27 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
       pending.resources.map(_.public_id) should not contain(result2.public_id)
     }, 10.seconds)
   }
+
+  // For this test to work, 'Auto-create folders' should be enabled in the Upload Settings,
+  // and the account should be empty of folders. 
+  // Comment out this line if you really want to test it.
+  ignore should "support listing folders" in {
+    Await.result(for {
+      result1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("test_folder1/item"))
+      result2 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("test_folder2/item"))
+      result3 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("test_folder1/test_subfolder1/item"))
+      result4 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("test_folder1/test_subfolder2/item"))
+      apiresult1 <- cloudinary.api.rootFolders if result1 != null && result2 != null && result3 != null && result4 != null
+      apiresult2 <- cloudinary.api.subfolders("test_folder1") if result1 != null && result2 != null && result3 != null && result4 != null
+      apiresult3 <- cloudinary.api.subfolders("test_folder").recover{case e => e} if result1 != null && result2 != null && result3 != null && result4 != null
+    } yield {
+      apiresult1.folders.map(_.name) should contain("test_folder1")
+      apiresult1.folders.map(_.name) should contain("test_folder2")
+      apiresult2.folders.map(_.path) should contain("test_folder1/test_subfolder1")
+      apiresult2.folders.map(_.path) should contain("test_folder1/test_subfolder2")
+      apiresult3.isInstanceOf[NotFound] should be(true)
+    }, 10 seconds)
+  }
   
   //Remove ignore to test delete all - note use with care!!!
   ignore should "allow deleting all resources" in {

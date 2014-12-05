@@ -200,6 +200,10 @@ class Api(implicit cloudinary: Cloudinary) {
     callApi[UploadPresetUpdateResponse](Api.PUT, "upload_presets" :: uploadPreset.name :: Nil,
       uploadPreset.toMap.filterKeys{_ != "name"})
   }
+
+  def rootFolders() = callApi[FolderListResponse](Api.GET, "folders" :: Nil, Map())
+
+  def subfolders(ofFolderPath:String) = callApi[FolderListResponse](Api.GET, "folders" :: ofFolderPath :: Nil, Map())
   
   private lazy val gmtDateFormat = {
     val df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss zzz")
