@@ -37,7 +37,7 @@ case class UploadResponse(public_id: String, url: String, secure_url: String, si
   def format:String = (raw \ "format").extractOpt[String].getOrElse(null)
 }
 case class LargeRawUploadResponse(public_id: String, url: String, secure_url: String, signature: String, bytes: Long,
-  resource_type: String, upload_id:Option[String], done:Option[Boolean]) extends VersionedResponse with TimestampedResponse
+  resource_type: String, tags: List[String] = List(), upload_id:Option[String], done:Option[Boolean]) extends VersionedResponse with TimestampedResponse
 case class DestroyResponse(result: String) extends RawResponse
 case class ExplicitResponse(public_id: String, version: String, url: String, secure_url: String, signature: String, bytes: Long,
   format: String, eager: List[EagerInfo] = List(), `type`: String) extends RawResponse

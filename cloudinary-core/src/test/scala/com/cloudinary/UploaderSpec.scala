@@ -263,9 +263,10 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
   
   it should "support uploading large raw files" in {
     Await.result(for {
-      response <- cloudinary.uploader().uploadLargeRaw("src/test/resources/docx.docx", LargeUploadParameters())
+      response <- cloudinary.uploader().uploadLargeRaw("src/test/resources/docx.docx", LargeUploadParameters().tags(Set("large_upload_test_tag")))
     } yield {
       response.bytes should equal(new java.io.File("src/test/resources/docx.docx").length())
+      response.tags should equal(List("large_upload_test_tag"))
       response.done should equal(Some(true))
     }, 10.seconds)
   }

@@ -118,6 +118,7 @@ case class LargeUploadParameters(parameters: Map[String, _] = Map()) extends Par
   def publicId(value:String) = param("public_id" , value)
   def backup(backup:Boolean) = param("backup" , backup)
   def uploadId(value:String) = param("upload_id" , value)
+  def tags(value:Set[String]) = param("tags" , StringSet(value))
 }
 
 case class TextParameters(text: String,
