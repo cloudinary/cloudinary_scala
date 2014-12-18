@@ -6,7 +6,7 @@ sonatypeSettings
 
 organization := "com.cloudinary"
 
-version := "0.9.4-SNAPSHOT"
+version := "0.9.5-SNAPSHOT"
 
 scalaVersion := "2.11.1"
 

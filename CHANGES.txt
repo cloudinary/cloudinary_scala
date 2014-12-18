@@ -1,3 +1,4 @@
+0.9.5 - 2014-12-18 - support folder listing, https sharding. don't sign version component. url suffix and use root path support, support tags in upload large, support pHash, support listing with start_at, upload preset API, upload with unsigned upload presets, background removal, dpr and responsive, return_delete_by_token support, custom coordinates
 0.9.4 - 2014-09-1 - support scala 2.11
 0.9.3 - 2014-07-15 - remove sbt-sonatype plugin dependency. migrate play plugin and sample play project to 2.2.2. migrate sample project to Slick 2.0 and play-slick 0.6.0.1
 0.9.2 - 2014-03-04 - new update method. add listing by moderation kind and status. add moderation status in listing. add moderation flag in upload. add moderation_status in update. add ocr, raw_conversion, categorization, detection, similarity_search and auto_tagging parameters in update and upload. add support for uploading large raw files
