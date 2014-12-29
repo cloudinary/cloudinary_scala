@@ -4,7 +4,7 @@ sonatypeSettings
 
 name := "cloudinary-scala-play"
 
-organization := "com.cloudinary"
+organization := "se.crisp"
 
 version := "0.9.5b-SNAPSHOT"
 
