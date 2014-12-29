@@ -31,15 +31,16 @@ pomExtra := {
     </license>
   </licenses>
   <scm>
-    <connection>scm:git:github.com/cloudinary/cloudinary_scala.git</connection>
-    <developerConnection>scm:git:github.com/cloudinary/cloudinary_scala.git</developerConnection>
+    <connection>scm:git:github.com/crispab/cloudinary_scala.git</connection>
+    <developerConnection>scm:git:github.com/crispab/cloudinary_scala.git</developerConnection>
     <url>github.com/cloudinary/cloudinary_scala.git</url>
+    <url>github.com/crispab/cloudinary_scala.git</url>
   </scm>
   <developers>
      <developer>
-        <id>cloudinary</id>
-        <name>Cloudinary</name>
-        <email>info@cloudinary.com</email>
+        <id>jgrape</id>
+        <name>Jan Grape</name>
+        <email>jan.grape@crisp.se</email>
     </developer>
   </developers>
 }
