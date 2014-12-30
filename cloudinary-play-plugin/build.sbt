@@ -6,7 +6,13 @@ name := "cloudinary-scala-play"
 
 organization := "com.cloudinary"
 
-version := "0.9.5-SNAPSHOT"
+version := Common.version
+
+lazy val root = (project in file(".")).enablePlugins(PlayScala)
+
+scalaVersion := Common.scalaVersion
+
+crossScalaVersions := Common.scalaVersions
 
 resolvers += "sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
@@ -14,7 +20,7 @@ resolvers += "sonatype releases" at "https://oss.sonatype.org/content/repositori
 
 resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 
-libraryDependencies ++= Seq("com.cloudinary" %% "cloudinary-core-scala" % "0.9.5-SNAPSHOT")    
+libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % version.value
 
 pomExtra := {
   <url>http://cloudinary.com</url>
@@ -38,5 +44,3 @@ pomExtra := {
     </developer>
   </developers>
 }
-
-play.Project.playScalaSettings
