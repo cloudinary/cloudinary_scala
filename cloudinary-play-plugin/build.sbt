@@ -4,14 +4,15 @@ sonatypeSettings
 
 name := "cloudinary-scala-play"
 
-organization := "se.crisp"
+organization := "com.cloudinary"
 
-version := "0.9.5b-SNAPSHOT"
+version := Common.version
 
 lazy val root = (project in file(".")).enablePlugins(PlayScala)
 
-scalaVersion := "2.11.1"
+scalaVersion := Common.scalaVersion
 
+crossScalaVersions := Common.scalaVersions
 
 resolvers += "sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
@@ -19,7 +20,7 @@ resolvers += "sonatype releases" at "https://oss.sonatype.org/content/repositori
 
 resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 
-libraryDependencies ++= Seq("com.cloudinary" %% "cloudinary-core-scala" % "0.9.5-SNAPSHOT")
+libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % version.value
 
 pomExtra := {
   <url>http://cloudinary.com</url>
@@ -31,16 +32,15 @@ pomExtra := {
     </license>
   </licenses>
   <scm>
-    <connection>scm:git:github.com/crispab/cloudinary_scala.git</connection>
-    <developerConnection>scm:git:github.com/crispab/cloudinary_scala.git</developerConnection>
+    <connection>scm:git:github.com/cloudinary/cloudinary_scala.git</connection>
+    <developerConnection>scm:git:github.com/cloudinary/cloudinary_scala.git</developerConnection>
     <url>github.com/cloudinary/cloudinary_scala.git</url>
-    <url>github.com/crispab/cloudinary_scala.git</url>
   </scm>
   <developers>
      <developer>
-        <id>jgrape</id>
-        <name>Jan Grape</name>
-        <email>jan.grape@crisp.se</email>
+        <id>cloudinary</id>
+        <name>Cloudinary</name>
+        <email>info@cloudinary.com</email>
     </developer>
   </developers>
 }

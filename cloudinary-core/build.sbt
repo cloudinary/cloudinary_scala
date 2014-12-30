@@ -6,11 +6,11 @@ sonatypeSettings
 
 organization := "com.cloudinary"
 
-version := "0.9.5-SNAPSHOT"
+version := Common.version
 
-scalaVersion := "2.11.1"
+scalaVersion := Common.scalaVersion
 
-crossScalaVersions := Seq("2.10.4", "2.11.1")
+crossScalaVersions := Common.scalaVersions
 
 name := "cloudinary-core-scala"
 
