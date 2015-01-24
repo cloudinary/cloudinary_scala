@@ -26,7 +26,7 @@ case class CloudinaryResource(version: String, publicId: String, format:Option[S
   def preloadedIdentifier = 
 		  resourceType.map(_ + "/").getOrElse("") +
 		  `type`.map(_ + "/").getOrElse("") +
-		  identifier
+		  identifier +
 		  signature.map("#" + _).getOrElse("")
 		  
   def url(transformation:Option[Transformation] = None, formatOverride:Option[String] = None) = cp.cloudinary.url.copy(format=formatOverride.orElse(format), transformation=transformation).version(version).generate(publicId)
