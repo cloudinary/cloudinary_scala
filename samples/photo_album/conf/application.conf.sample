@@ -63,4 +63,6 @@ cloudinary = {
   cloud_name = <CLOUD_NAME>
   api_key = <API_KEY>
   api_secret = <API_SECRET>
+  # or sepcify a CLOUDINARY_URL in env or explicitly
+  # url = ${?CLOUDINARY_URL}
 }
