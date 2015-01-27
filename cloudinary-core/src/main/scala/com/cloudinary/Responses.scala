@@ -35,7 +35,6 @@ case class UploadResponse(public_id: String, url: String, secure_url: String, si
   def width:Int = (raw \ "width").extractOpt[Int].getOrElse(0)
   def height:Int = (raw \ "height").extractOpt[Int].getOrElse(0)
   def format:String = (raw \ "format").extractOpt[String].getOrElse(null)
-  def pages:Int = (raw \ "pages").extractOpt[Int].getOrElse(1)
 }
 case class LargeRawUploadResponse(public_id: String, url: String, secure_url: String, signature: String, bytes: Long,
   resource_type: String, tags: List[String] = List(), upload_id:Option[String], done:Option[Boolean]) extends VersionedResponse with TimestampedResponse
@@ -211,4 +210,6 @@ trait AdvancedResponse extends RawResponse {
     val v = raw \ "moderation_status"
 	v.extractOpt[ModerationStatus.Value]
   }
+
+  lazy val pages:Int = (raw \ "pages").extractOpt[Int].getOrElse(1)
 }
