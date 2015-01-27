@@ -23,18 +23,21 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
     c
   }
 
+  val testResourcePath = "cloudinary-core/src/test/resources"
+
   behavior of "An Uploader"
 
   it should "upload a file and get sizes, colors, predominant, public_id, version and signature back" in {
     val result = Await result (
       cloudinary
       .uploader()
-      .upload("src/test/resources/logo.png", UploadParameters().colors(true)), 5 seconds)
+      .upload(s"$testResourcePath/logo.png", UploadParameters().colors(true)), 5 seconds)
 
     result.width should equal(241)
     result.height should equal(51)
     result.colors should not equal (Map())
     result.predominant should not equal (Map())
+    result.pages should equal(1)
 
     val toSign = Map(
       "public_id" -> result.public_id,
@@ -79,7 +82,7 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
 
   it should "be able to rename files, fail if exist or override if override is specified" in {
     val result = Await result (
-      cloudinary.uploader().upload("src/test/resources/logo.png"), 5 seconds)
+      cloudinary.uploader().upload(s"$testResourcePath/logo.png"), 5 seconds)
 
     val publicId1 = result.public_id
 
@@ -89,7 +92,7 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
       }, 5 seconds) should not eq null
 
     val result2 = Await result (
-      cloudinary.uploader().upload("src/test/resources/favicon.ico"), 5 seconds)
+      cloudinary.uploader().upload(s"$testResourcePath/favicon.ico"), 5 seconds)
     val publicId2 = result2.public_id
 
     val result3 = Await.result(
@@ -125,7 +128,7 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
 
   it should "attach headers when specified, both as maps and as lists" in {
     Await.result(
-      cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().headers(Map("Link" -> "1"))), 5 seconds)
+      cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().headers(Map("Link" -> "1"))), 5 seconds)
   }
 
   it should "support adding text" in {
@@ -138,9 +141,9 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
   it should "support generating sprites" in {
     Await.result(
       cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-        UploadParameters().tags(Set("multi_test_tag")).publicId("multi_test_tag_1")).andThen {
+        UploadParameters().tags(Set("sprite_test_tag")).publicId("sprite_test_tag_1")).andThen {
           case _ => cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-            UploadParameters().tags(Set("multi_test_tag")).publicId("multi_test_tag_2"))
+            UploadParameters().tags(Set("sprite_test_tag")).publicId("sprite_test_tag_2"))
         }, 10 seconds)
     Await.result(cloudinary.uploader().generateSprite("sprite_test_tag"), 5 seconds).image_infos.size should equal(2)
     Await.result(cloudinary.uploader().generateSprite("sprite_test_tag", transformation = new Transformation().w_(100)), 5 seconds).css_url should include("w_100")
@@ -166,8 +169,8 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
 
   it should "support tag operations on resources" in {
     Await.result(for {
-      id1 <- cloudinary.uploader().upload("src/test/resources/logo.png").map(_.public_id)
-      id2 <- cloudinary.uploader().upload("src/test/resources/logo.png").map(_.public_id)
+      id1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png").map(_.public_id)
+      id2 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png").map(_.public_id)
       tagResult1 <- cloudinary.uploader().addTag("tag1", List(id1, id2))
       tagResult2 <- cloudinary.uploader().addTag("tag2", List(id1))
       tags1 <- cloudinary.api().resource(id1).map(_.tags)
@@ -182,19 +185,19 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
 
   it should "allow whitelisted formats if allowed_formats" in {
     Await.result(for {
-      result <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().allowedFormats(Set("png")))
+      result <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().allowedFormats(Set("png")))
     } yield result.format, 5.seconds) should equal("png")
   }
 
   it should "prevent non whitelisted formats from being uploaded if allowed_formats is specified" in {
     Await.result(for {
-      error <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().allowedFormats(Set("jpg"))).recover{case e => e}
+      error <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().allowedFormats(Set("jpg"))).recover{case e => e}
     } yield {error}, 5.seconds).isInstanceOf[BadRequest] should equal(true)  
   }
 
   it should "allow non whitelisted formats if type is specified and convert to that type" in {
     Await.result(for {
-      result <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().allowedFormats(Set("jpg")).format("jpg"))
+      result <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().allowedFormats(Set("jpg")).format("jpg"))
     } yield result.format, 5.seconds) should equal("jpg")
   }
 
@@ -202,7 +205,7 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
     val faces1 = List(FaceInfo(121, 31, 110, 151), FaceInfo(120, 30, 109, 150))
     val faces2 = List(FaceInfo(122, 32, 111, 152))
     Await.result(for {
-      r1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().faceCoordinates (faces1))
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().faceCoordinates (faces1))
       resource1 <- cloudinary.api.resource(r1.public_id, faces=true) if r1 != null
       r2 <- cloudinary.uploader().explicit(r1.public_id, `type` = "upload", faceCoordinates = faces2) if resource1 != null
       resource2 <- cloudinary.api.resource(r1.public_id, faces=true) if r2 != null
@@ -226,7 +229,7 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
   
   it should "support requesting manual moderation" in {
     Await.result(for  {
-      result <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
+      result <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
     } yield {
       result.moderation.head.status should equal(com.cloudinary.response.ModerationStatus.pending)
       result.moderation.head.kind should equal("manual")
@@ -235,37 +238,37 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
   
   it should "support requesting raw conversion" in {
     val error = Await.result(for {
-      e <- cloudinary.uploader().upload("src/test/resources/docx.docx", UploadParameters().rawConvert("illegal"), "raw").recover{case e => e}
+      e <- cloudinary.uploader().upload(s"$testResourcePath/docx.docx", UploadParameters().rawConvert("illegal"), "raw").recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("not a valid")
   }
   
   it should "support requesting categorization" in {
     val error = Await.result(for {
-      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().categorization("illegal")).recover{case e => e}
+      e <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().categorization("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("not a valid")
   }
   
   it should "support requesting detection" in {
     val error = Await.result(for {
-      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().detection("illegal")).recover{case e => e}
+      e <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().detection("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("not a valid")
   }
     
   it should "support requesting auto_tagging" in {
     val error = Await.result(for {
-      e <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().autoTagging(0.5)).recover{case e => e}
+      e <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().autoTagging(0.5)).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Must use")
   }
   
   it should "support uploading large raw files" in {
     Await.result(for {
-      response <- cloudinary.uploader().uploadLargeRaw("src/test/resources/docx.docx", LargeUploadParameters().tags(Set("large_upload_test_tag")))
+      response <- cloudinary.uploader().uploadLargeRaw(s"$testResourcePath/docx.docx", LargeUploadParameters().tags(Set("large_upload_test_tag")))
     } yield {
-      response.bytes should equal(new java.io.File("src/test/resources/docx.docx").length())
+      response.bytes should equal(new java.io.File(s"$testResourcePath/docx.docx").length())
       response.tags should equal(List("large_upload_test_tag"))
       response.done should equal(Some(true))
     }, 10.seconds)
@@ -275,7 +278,7 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
     val c = cloudinary.withConfig(Map("api_key" -> null, "api_secret" -> null)) 
     val (presetName, uploadResult) = Await.result(for {
       preset <- cloudinary.api.createUploadPreset(UploadPreset(unsigned = true, settings = UploadParameters().folder("upload_folder")))
-      result <- c.uploader.unsignedUpload("src/test/resources/logo.png", preset.name)
+      result <- c.uploader.unsignedUpload(s"$testResourcePath/logo.png", preset.name)
     } yield (preset.name, result), 10.seconds)
     uploadResult.public_id should fullyMatch regex "upload_folder/[a-z0-9]+"
     Await.result(cloudinary.api.deleteUploadPreset(presetName), 5.seconds)

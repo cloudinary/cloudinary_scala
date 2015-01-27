@@ -25,6 +25,8 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
 
   lazy val api = cloudinary.api()
 
+  val testResourcePath = "cloudinary-core/src/test/resources"
+
   override def beforeAll() {
 
     val options = UploadParameters().publicId("api_test").
@@ -37,8 +39,8 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
       r2 <- api.deleteTransformation("api_test_transformation").recover { case _ => "r2 failed" }
       r3 <- api.deleteTransformation("api_test_transformation2").recover { case _ => "r3 failed" }
       r4 <- api.deleteTransformation("api_test_transformation3").recover { case _ => "r4 failed" }
-      r5 <- cloudinary.uploader().upload("src/test/resources/logo.png", options).recover { case _ => "r5 failed" }
-      r6 <- cloudinary.uploader().upload("src/test/resources/logo.png", options.publicId("api_test1")).recover { case _ => "r6 failed" }
+      r5 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", options).recover { case _ => "r5 failed" }
+      r6 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", options.publicId("api_test1")).recover { case _ => "r6 failed" }
       r7 <- api.deleteUploadPreset("api_test_upload_preset").recover { case _ => "r7 failed" }
       r8 <- api.deleteUploadPreset("api_test_upload_preset2").recover { case _ => "r8 failed" }
       r9 <- api.deleteUploadPreset("api_test_upload_preset3").recover { case _ => "r9 failed" }
@@ -112,7 +114,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
     val startAt = new java.util.Date
     Thread.sleep(2000)
     val (response, resources) = Await.result(for {
-      uploadResponse <- cloudinary.uploader.upload("src/test/resources/logo.png")
+      uploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png")
       resourcesResponse <- api.resources(`type` = "upload", startAt = Some(startAt), direction = Api.ASCENDING) if uploadResponse != null
     } yield (uploadResponse, resourcesResponse.resources), 5 seconds)
     resources.map{resource => resource.public_id} should equal(List(response.public_id))
@@ -128,7 +130,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
 
   it should "allow deleting derived resource" in {
     val (resource, resourceAfterDelete) = Await.result(for {
-      r1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().
         publicId("api_test3").
         eager(List(Transformation().w_(101).c_("scale"))))
       resource <- api.resource("api_test3") if (r1 != null)
@@ -141,7 +143,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
 
   it should "allow deleting resources" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("api_test3"))
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("api_test3"))
       resource <- api.resource("api_test3") if (r1 != null)
       r2 <- api.deleteResources(List("apit_test", "api_test2", "api_test3")) if resource != null
       throwable <- api.resource("api_test3").recover { case e => e } if (r2 != null)
@@ -150,7 +152,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
 
   it should "allow deleting resources by prefix" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("api_test_by_prefix"))
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("api_test_by_prefix"))
       resource <- api.resource("api_test_by_prefix") if r1 != null
       r2 <- api.deleteResourcesByPrefix("api_test_by") if resource != null
       throwable <- api.resource("api_test_by_prefix").recover { case e => e } if r2 != null
@@ -159,7 +161,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
 
   it should "allow deleting resources by tags" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("api_test4").tags(Set("api_test_tag_for_delete")))
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("api_test4").tags(Set("api_test_tag_for_delete")))
       resource <- api.resource("api_test4") if (r1 != null)
       r2 <- api.deleteResourcesByTag("api_test_tag_for_delete") if resource != null
       throwable <- api.resource("api_test4").recover { case e => e } if (r2 != null)
@@ -300,14 +302,14 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   
   it should "support setting manual moderation status" in {
     Await.result(for  {
-      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
+      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
       apiResult <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().moderationStatus(ModerationStatus.approved))
     } yield apiResult, 10.seconds).moderation.head.status should equal(ModerationStatus.approved)
   }
   
   it should "support requesting raw conversion" in {
     val error = Await.result(for {
-      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png")
       e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().rawConvert("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Illegal value")
@@ -315,7 +317,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   
   it should "support requesting categorization" in {
     val error = Await.result(for {
-      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png")
       e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().categorization("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Illegal value")
@@ -323,7 +325,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   
   it should "support requesting detection" in {
     val error = Await.result(for {
-      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png")
       e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().detection("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Illegal value")
@@ -331,7 +333,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
     
   it should "support requesting auto_tagging" in {
     val error = Await.result(for {
-      uploadResult <- cloudinary.uploader().upload("src/test/resources/logo.png")
+      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png")
       e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().autoTagging(0.5)).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Must use")
@@ -339,9 +341,9 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   
   it should "support listing by moderation kind and value" in {
     Await.result(for {
-      result1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
-      result2 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
-      result3 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().moderation("manual"))
+      result1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
+      result2 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
+      result3 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
       apiresult1 <- cloudinary.api.update(result1.public_id, UpdateParameters().moderationStatus(ModerationStatus.approved))
       apiresult2 <- cloudinary.api.update(result2.public_id, UpdateParameters().moderationStatus(ModerationStatus.rejected))
       approved <- cloudinary.api.resourcesByModeration(status = ModerationStatus.approved, maxResults = 1000, moderations = true) if result3 != null && apiresult1 != null && apiresult2 != null
@@ -368,10 +370,10 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   // Comment out this line if you really want to test it.
   ignore should "support listing folders" in {
     Await.result(for {
-      result1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("test_folder1/item"))
-      result2 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("test_folder2/item"))
-      result3 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("test_folder1/test_subfolder1/item"))
-      result4 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("test_folder1/test_subfolder2/item"))
+      result1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/item"))
+      result2 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder2/item"))
+      result3 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/test_subfolder1/item"))
+      result4 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/test_subfolder2/item"))
       apiresult1 <- cloudinary.api.rootFolders if result1 != null && result2 != null && result3 != null && result4 != null
       apiresult2 <- cloudinary.api.subfolders("test_folder1") if result1 != null && result2 != null && result3 != null && result4 != null
       apiresult3 <- cloudinary.api.subfolders("test_folder").recover{case e => e} if result1 != null && result2 != null && result3 != null && result4 != null
@@ -387,7 +389,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   //Remove ignore to test delete all - note use with care!!!
   ignore should "allow deleting all resources" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload("src/test/resources/logo.png", UploadParameters().publicId("api_test5").eager(List(Transformation().w_(0.2).c_("scale"))))
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("api_test5").eager(List(Transformation().w_(0.2).c_("scale"))))
       resource1 <- api.resource("api_test5") if (r1 != null)
       r2 <- api.deleteAllResources(keepOriginal = true) if resource1 != null
       resource2 <- api.resource("api_test5")
