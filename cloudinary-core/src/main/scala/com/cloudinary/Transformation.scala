@@ -116,7 +116,7 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 	 * Multiple modes can be applied.
 	 */
 	def angle(value:String*) = param("angle", value)
-	def a_(value:String*) = param("angle", value)
+	def a_(value:String*) = angle(value: _*)
 
 	/**
 	 * Adjust opacity to the given percentage.
