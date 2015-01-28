@@ -28,7 +28,7 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 
 	protected def param(key:String, value:Any):Transformation = {
 	  val nl = transformations.last + (key -> value) 
-	  new Transformation(transformations.dropRight(1) ++ List(nl))
+	  new Transformation(transformations.dropRight(1) :+ nl)
 	}
 	
 	
