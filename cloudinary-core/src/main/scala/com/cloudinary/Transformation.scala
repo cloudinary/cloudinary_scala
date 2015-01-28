@@ -117,6 +117,12 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 	 */
 	def angle(value:String*) = param("angle", value)
 	def a_(value:String*) = param("angle", value)
+
+	/**
+	 * Adjust opacity to the given percentage.
+	 */
+	def opacity(value:Int) = param("opacity", value)
+	def o_(value:Int) = opacity(value)
 	
 	/**
 	 * Add a solid border around the image. 
@@ -276,7 +282,7 @@ case class Transformation(val transformations:List[Map[String, Any]] = List(Map[
 			"w", "width", "h", "height", "x", "x", "y", "y", "r", "radius", "d", "default_image", 
 			"g", "gravity", "cs", "color_space", "p", "prefix", "l", "overlay", "u", "underlay", 
 			"f", "fetch_format", "dn", "density", "pg", "page", "dl", "delay", "e", "effect", 
-			"bo", "border", "q", "quality", "c", "crop", "dpr", "dpr"
+			"bo", "border", "q", "quality", "c", "crop", "dpr", "dpr", "o", "opacity"
 		).grouped(2).map {
 		  p => p.head -> options.getOrElse(p.last, "")
 		}.filter(p => p._2 != "" && p._2 != null).toMap
