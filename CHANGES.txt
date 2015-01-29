@@ -1,4 +1,5 @@
-0.9.6 - 2014-01-06 - Cross version build for play.
+0.9.7 - 2015-01-29 - Opacity, pages in UploadResponse, support CLOUDINARY_URL in the play plugin
+0.9.6 - 2015-01-06 - Cross version build for play.
 0.9.5 - 2014-12-18 - support folder listing, https sharding. don't sign version component. url suffix and use root path support, support tags in upload large, support pHash, support listing with start_at, upload preset API, upload with unsigned upload presets, background removal, dpr and responsive, return_delete_by_token support, custom coordinates
 0.9.4 - 2014-09-1 - support scala 2.11
 0.9.3 - 2014-07-15 - remove sbt-sonatype plugin dependency. migrate play plugin and sample play project to 2.2.2. migrate sample project to Slick 2.0 and play-slick 0.6.0.1

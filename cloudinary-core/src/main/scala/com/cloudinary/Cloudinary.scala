@@ -13,7 +13,7 @@ object Cloudinary {
   final val OLD_AKAMAI_SHARED_CDN = "cloudinary-a.akamaihd.net";
   final val AKAMAI_SHARED_CDN = "res.cloudinary.com";
   final val SHARED_CDN = AKAMAI_SHARED_CDN;
-  final val VERSION = "0.9.6-SNAPSHOT"
+  final val VERSION = "0.9.7-SNAPSHOT"
   final val USER_AGENT = s"cld-scala-$VERSION"
 
   def configFromUrl(cloudinaryUrl: String): Map[String, Any] = {
