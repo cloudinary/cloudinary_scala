@@ -6,6 +6,8 @@ addSbtPlugin("com.typesafe.play" % "sbt-plugin" % System.getProperty("play.versi
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.0.0")
 
-addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "0.2.1")
+// prefer to depend on these in ~/.sbt since this is only relevant for releasers
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.3")
+// addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "0.2.1")
+
+// addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.3")
