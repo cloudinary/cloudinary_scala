@@ -5,3 +5,7 @@ resolvers += "Typesafe repository" at "https://repo.typesafe.com/typesafe/releas
 addSbtPlugin("com.typesafe.play" % "sbt-plugin" % System.getProperty("play.version", "2.3.7"))
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.0.0")
+
+addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "0.2.1")
+
+addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.3")
