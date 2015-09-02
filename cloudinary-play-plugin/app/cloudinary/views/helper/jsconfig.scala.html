@@ -1,19 +1,16 @@
-@import play.api.Play.current
-@import cloudinary.plugin.CloudinaryPlugin
+@(implicit cld:com.cloudinary.Cloudinary)
 
-@current.plugin[CloudinaryPlugin].map(_.cloudinary).map { c =>
-	<script type="text/javascript">
-		$.cloudinary.config({
-			@List("api_key", "cloud_name").map{k => 
-			  @if(c.getStringConfig(k).isDefined){
-				  "@k": "@{c.getStringConfig(k).get}",
-			  }
-			}
-			@List("cdn_subdomain", "private_cdn", "secure_distribution").map{k => 
-			  @if(c.getStringConfig(k).isDefined){
-				  "@k": @{c.getStringConfig(k).get},
-			  }
-			}
-		});
-	</script>
-}
+<script type="text/javascript">
+	$.cld.config({
+		@List("api_key", "cloud_name").map{k => 
+		  @if(cld.getStringConfig(k).isDefined){
+			  "@k": "@{cld.getStringConfig(k).get}",
+		  }
+		}
+		@List("cdn_subdomain", "private_cdn", "secure_distribution").map{k => 
+		  @if(cld.getStringConfig(k).isDefined){
+			  "@k": @{cld.getStringConfig(k).get},
+		  }
+		}
+	});
+</script>

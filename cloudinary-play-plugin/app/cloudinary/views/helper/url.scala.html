@@ -1,13 +1,9 @@
-@(source:String, args: Set[(Symbol,Any)])
+@(source:String, args: Set[(Symbol,Any)])(implicit cld:com.cloudinary.Cloudinary)
 
-@import play.api.Play.current
-@import cloudinary.plugin.CloudinaryPlugin
-@import com.cloudinary._
+@import com.cloudinary.Transformation
 
-@current.plugin[CloudinaryPlugin].map(_.cloudinary).map { c =>
-	@{
-    val argsm = args.toMap
-		val curl = c.url().copy(`type`=argsm.get('type).map(_.toString).getOrElse("upload"), format=argsm.get('format).map(_.toString), transformation=argsm.get('transformation).map(_.asInstanceOf[Transformation]))
-		curl.generate(source)
-	}
+@{
+  val argsm = args.toMap
+  val curl = cld.url().copy(`type`=argsm.get('type).map(_.toString).getOrElse("upload"), format=argsm.get('format).map(_.toString), transformation=argsm.get('transformation).map(_.asInstanceOf[Transformation]))
+  curl.generate(source)
 }

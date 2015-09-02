@@ -1,4 +1,4 @@
-@(photoUploadForm:Form[Photo], presetName:String)
+@(photoUploadForm:Form[Photo], presetName:String)(implicit messages: Messages, cld:com.cloudinary.Cloudinary)
 
 @import cloudinary.views.html.helper._
 @import com.cloudinary._
@@ -46,7 +46,7 @@
   
   <!-- Configure Cloudinary jQuery plugin -->
   @cloudinaryJs()
-  @jsconfig()
+  @jsconfig(cld)
   
   <script>
     $(document).ready(function() {

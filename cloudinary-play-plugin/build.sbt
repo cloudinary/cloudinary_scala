@@ -8,11 +8,7 @@ organization := "com.cloudinary"
 
 version := Common.version
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
-
 scalaVersion := Common.scalaVersion
-
-crossScalaVersions := Common.scalaVersions
 
 resolvers += "sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 

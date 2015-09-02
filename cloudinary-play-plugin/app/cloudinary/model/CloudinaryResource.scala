@@ -1,6 +1,5 @@
 package cloudinary.model
 
-import play.api.Play.current
 import cloudinary.plugin.CloudinaryPlugin
 import com.cloudinary.Cloudinary
 import com.cloudinary.Transformation
@@ -15,6 +14,7 @@ import play.api.data.Mapping
 import play.api.data.format.Formatter
 import play.api.data.FieldMapping
 import play.api.data.FormError
+import com.google.inject.Inject
 
 case class CloudinaryResource(version: String, publicId: String, format:Option[String] = None, data:Option[UploadResponse] = None,
     resourceType:Option[String] = None, `type`:Option[String] = None, signature:Option[String] = None) {
@@ -29,20 +29,22 @@ case class CloudinaryResource(version: String, publicId: String, format:Option[S
 		  identifier +
 		  signature.map("#" + _).getOrElse("")
 		  
-  def url(transformation:Option[Transformation] = None, formatOverride:Option[String] = None) = cp.cloudinary.url.copy(format=formatOverride.orElse(format), transformation=transformation).version(version).generate(publicId)
-  private def cp = current.plugin[CloudinaryPlugin].getOrElse(throw CloudinaryResource.pluginNotConfiguredException)
+  def url(transformation:Option[Transformation] = None, formatOverride:Option[String] = None)(implicit cld:Cloudinary) = 
+    cld.url.copy(
+      format=formatOverride.orElse(format),
+      transformation=transformation)
+    .version(version)
+    .generate(publicId)
 }
 
-object CloudinaryResource {
+class CloudinaryResourceBuilder @Inject() (plugin:CloudinaryPlugin) {
   val preloadedPattern = """^([^\/]+)\/([^\/]+)\/v(\d+)\/([^#]+)#([^\/]+)$""".r
   val storedPattern = """^v(\d+)\/([^#]+)$""".r
 
-  def pluginNotConfiguredException = new Exception("Cloudinary plugin isn't initialized. Please make sure to enable it")
+  val cld:Cloudinary = plugin.cloudinary
 
   def upload(file: AnyRef, params: UploadParameters)(implicit executionContext: ExecutionContext) = {
-    val cp = current.plugin[CloudinaryPlugin].getOrElse(throw pluginNotConfiguredException)
-    val cloudinary = cp.cloudinary
-    cloudinary.uploader.upload(file, params).map {
+    cld.uploader.upload(file, params).map {
       response =>
         CloudinaryResource(response.version, response.public_id, Some(response.format).filterNot(_ == ""), Some(response))
     }
@@ -66,7 +68,7 @@ object CloudinaryResource {
     case _ => throw new IllegalArgumentException("URI of preloaded file is illegal")
   }
   
-  val preloadedMapping:Mapping[CloudinaryResource] = FieldMapping[CloudinaryResource]()(preloadedFormatter) 
+  def preloadedMapping:Mapping[CloudinaryResource] = FieldMapping[CloudinaryResource]()(preloadedFormatter) 
   
   implicit def preloadedFormatter = new Formatter[CloudinaryResource] {
      override val format = None
@@ -81,7 +83,7 @@ object CloudinaryResource {
      }
   }
   
-  val validPreloadedSignature = Constraint[String] {s:String =>
+  def validPreloadedSignature = Constraint[String] {s:String =>
   	preloaded(s) match {
   	  case Left(e) => Invalid(e)
   	  case _ => Valid
@@ -98,13 +100,8 @@ object CloudinaryResource {
   }
 
   private def verifySignature(version: String, filename: String, signature: String) = {
-    val cloudinary = current.plugin[CloudinaryPlugin].map(_.cloudinary)
     val (publicId, format) = splitFormat(filename)
     val params = Map("public_id" -> publicId, "version" -> version)
-    cloudinary match {
-      case Some(c: Cloudinary) =>
-        c.signRequest(params)("signature") == signature
-      case _ => throw pluginNotConfiguredException
-    }
+    cld.signRequest(params)("signature") == signature
   }
 }

@@ -192,7 +192,7 @@ class Cloudinary(config: Map[String, Any]) {
       .setUrl(cloudinaryApiUrl("download", resourceType))
 
     for (param <- params) {
-      builder.addParameter(param._1, param._2.toString())
+      builder.addQueryParam(param._1, param._2.toString())
     }
     builder.build()
   }
@@ -215,7 +215,7 @@ class Cloudinary(config: Map[String, Any]) {
       .setUrl(cloudinaryApiUrl("download_tag.zip", resourceType))
 
     for (param <- params) {
-      builder.addParameter(param._1, param._2.toString())
+      builder.addQueryParam(param._1, param._2.toString())
     }
     builder.build()
   }

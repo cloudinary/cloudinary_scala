@@ -4,6 +4,7 @@ import scala.language.postfixOps
 import org.scalatest._
 import org.scalatest.Matchers
 import java.net.URI
+import scala.collection.JavaConverters._
 
 class CloudinarySpec extends FlatSpec with Matchers with OptionValues with Inside {
   lazy val cloudinary = {
@@ -210,19 +211,19 @@ class CloudinarySpec extends FlatSpec with Matchers with OptionValues with Insid
 
   it should "support private downloads" in {
     val request = cloudinary.privateDownload("img", "jpg") 
-    val parameters = request.getParams()
-    parameters.getFirstValue("public_id") should equal("img")
-    parameters.getFirstValue("format") should equal("jpg")
-    parameters.getFirstValue("api_key") should equal("a")
-    request.getURI().getPath() should equal("/v1_1/test123/image/download")
+    val parameters = request.getQueryParams()
+    parameters.asScala.filter(_.getName == "public_id").head.getValue should equal("img")
+    parameters.asScala.filter(_.getName == "format").head.getValue should equal("jpg")
+    parameters.asScala.filter(_.getName == "api_key").head.getValue should equal("a")
+    request.getUri().getPath() should equal("/v1_1/test123/image/download")
   }
 
   it should "support zip downloads" in {
     val request = cloudinary.zipDownload("ttag")
-    val parameters = request.getParams()
-    parameters.getFirstValue("tag") should equal("ttag")
-    parameters.getFirstValue("api_key") should equal("a")
-    request.getURI().getPath() should equal("/v1_1/test123/image/download_tag.zip")
+    val parameters = request.getQueryParams()
+    parameters.asScala.filter(_.getName == "tag").head.getValue should equal("ttag")
+    parameters.asScala.filter(_.getName == "api_key").head.getValue should equal("a")
+    request.getUri().getPath() should equal("/v1_1/test123/image/download_tag.zip")
   }
 
   it should "support css sprite generation" in {

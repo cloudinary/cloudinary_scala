@@ -36,14 +36,14 @@ class Api(implicit cloudinary: Cloudinary) {
       if (v.isInstanceOf[Iterable[_]]) {
         for (sv <- v.asInstanceOf[Iterable[String]]) {
           method match {
-            case Api.GET => apiUrlBuilder.addQueryParameter(k + "[]", sv)
-            case _ => apiUrlBuilder.addParameter(k + "[]", sv)
+            case Api.GET => apiUrlBuilder.addQueryParam(k + "[]", sv)
+            case _ => apiUrlBuilder.addFormParam(k + "[]", sv)
           }
         }
       } else {
         method match {
-          case Api.GET => apiUrlBuilder.addQueryParameter(k, v.toString)
-          case _ => apiUrlBuilder.addParameter(k, v.toString)
+          case Api.GET => apiUrlBuilder.addQueryParam(k, v.toString)
+          case _ => apiUrlBuilder.addFormParam(k, v.toString)
         }
       }
     }

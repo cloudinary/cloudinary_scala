@@ -13,6 +13,7 @@ import Implicits._
 
 
 object UploadPresetTest extends Tag("com.cloudinary.tags.UploadPresetTest")
+object EagerTest extends Tag("com.cloudinary.tags.EagerTest")
 
 class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside {
   lazy val cloudinary = {
@@ -49,8 +50,8 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
   it should "upload from a url" in {
     val result = Await result (
       cloudinary.uploader().upload("http://cloudinary.com/images/logo.png"), 5 seconds)
-    result.width should equal(241)
-    result.height should equal(51)
+    result.width should equal(344)
+    result.height should equal(76)
 
     val toSign = Map(
       "public_id" -> result.public_id,
@@ -153,9 +154,9 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
   it should "support multi" in {
     val (url1, url2, url3) = Await.result(for {
       r1 <- cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-        UploadParameters().tags(Set("sprite_test_tag")).publicId("sprite_test_tag_1"))
+        UploadParameters().tags(Set("multi_test_tag")).publicId("multi_test_tag_1"))
       r2 <- cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-        UploadParameters().tags(Set("sprite_test_tag")).publicId("sprite_test_tag_2"))
+        UploadParameters().tags(Set("multi_test_tag")).publicId("multi_test_tag_2"))
       url1 <- cloudinary.uploader().multi("multi_test_tag").map(_.url) if (r1 != null && r2 != null)
       url2 <- cloudinary.uploader().multi("multi_test_tag", transformation = Transformation().w_(100)).map(_.url) if (r1 != null && r2 != null)
       url3 <- cloudinary.uploader().multi("multi_test_tag", transformation = Transformation().w_(101), format = "pdf").map(_.url) if (r1 != null && r2 != null)
@@ -282,5 +283,15 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
     } yield (preset.name, result), 10.seconds)
     uploadResult.public_id should fullyMatch regex "upload_folder/[a-z0-9]+"
     Await.result(cloudinary.api.deleteUploadPreset(presetName), 5.seconds)
+  }
+
+  it should "support uploading with eager async transformations" taggedAs(EagerTest) in {
+    val eagerTransforms = List(Transformation().c_("scale").w_(0.5), Transformation().c_("scale").w_(0.4))
+    val uploadParams = UploadParameters().eager(eagerTransforms).eagerAsync(true)
+    Await.result(for {
+      response <- cloudinary.uploader().upload("http://cloudinary.com/images/logo.png", uploadParams)
+    } yield {
+      response.eager.length should equal(2)
+    }, 10.seconds)
   }
 }

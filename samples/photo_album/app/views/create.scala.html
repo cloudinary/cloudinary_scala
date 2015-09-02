@@ -1,4 +1,4 @@
-@(photo: Photo, maybeUpload:Option[com.cloudinary.response.UploadResponse] = None)
+@(photo: Photo, maybeUpload:Option[com.cloudinary.response.UploadResponse] = None)(implicit cld:com.cloudinary.Cloudinary)
 @main("Image Created") {
 <h1>Your photo was uploaded sucessfully!</h1>
 

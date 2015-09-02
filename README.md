@@ -15,19 +15,37 @@ For Scala, Cloudinary provides a library for simplifying the integration even fu
 
 ## Setup ######################################################################
 
-The cloudinary_scala library is available on the [Sonatype snapshots repository](https://oss.sonatype.org/content/repositories/snapshots). To use it, add the following dependency to your `build.sbt`:
+The Play 2.4 branch is not currently published to a Maven repository. To use it in your project you can run `sbt publishLocal`.
+
+To use it, add the following dependency to your `build.sbt`:
     
-    resolvers += "sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+    resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
     
     libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % "0.9.7-SNAPSHOT"
 
-If using the [Play 2](http://www.playframework.com/) you can add:
+If using the [Play 2.4](http://www.playframework.com/) you can add:
 
     "com.cloudinary" %% "cloudinary-scala-play" % "0.9.7-SNAPSHOT"
 
-to the list of play dependencies. You'll also need to register the plugin in `conf/play.plugins`:
+In your controller inject an instance of `CloudinaryResourceBuilder` and make sure to declare an implicit reference to the enclosed `Cloudinary` instance and import `preloadedFormatter`. For example:
 
-    10000:cloudinary.plugin.CloudinaryPlugin
+```scala
+class PhotosController @Inject() (cloudinaryResourceBuilder: CloudinaryResourceBuilder) extends Controller {
+  
+  implicit val cld:com.cloudinary.Cloudinary = cloudinaryResourceBuilder.cld
+  import cloudinaryResourceBuilder.preloadedFormatter
+  ..
+}
+```
+
+To use it in a view or to use one of the included view helpers have your Twirl view accept an implicit `Cloudinary` instance. For example:
+
+```
+@(implicit cld:com.cloudinary.Cloudinary)
+...
+<img src="@url("officialchucknorrispage", Set('format -> "png", 'type -> "facebook", 
+    'transformation -> Transformation().h_(95).w_(95).c_("thumb").g_("face").e_("sepia").r_(20)./.a_(10)))">
+```
 
 ## Try it right away
 
@@ -79,20 +97,25 @@ by initializing the Cloudinary object, or by using the CLOUDINARY_URL environmen
 
 The entry point of the library is the Cloudinary object. 
 
-    val cloudinary = new Cloudinary()
+```scala
+val cloudinary = new Cloudinary()
+```
 
 Here's an example of setting the configuration parameters programatically:
 
-
-    val cloudinary = new Cloudinary(Map(
-      "cloud_name" -> "n07t21i7",
-      "api_key" -> "123456789012345",
-      "api_secret" -> "abcdeghijklmnopqrstuvwxyz12"
-    ))
+```scala
+val cloudinary = new Cloudinary(Map(
+  "cloud_name" -> "n07t21i7",
+  "api_key" -> "123456789012345",
+  "api_secret" -> "abcdeghijklmnopqrstuvwxyz12"
+))
+```
 
 Another example of setting the configuration parameters by providing the CLOUDINARY_URL value to the constructor:
 
-    val cloudinary = new Cloudinary("cloudinary://123456789012345:abcdeghijklmnopqrstuvwxyz12@n07t21i7")
+```scala
+val cloudinary = new Cloudinary("cloudinary://123456789012345:abcdeghijklmnopqrstuvwxyz12@n07t21i7")
+```
 
 #### When using the Play plugin
 
@@ -110,21 +133,36 @@ Any image uploaded to Cloudinary can be transformed and embedded using powerful 
 
 The following example generates the url for accessing an uploaded `sample` image while transforming it to fill a 100x150 rectangle:
 
-    cloudinary.url().transformation(Transformation().width(100).height(150).crop("fill")).generate("sample.jpg")
+```scala
+cloudinary.url().transformation(Transformation().width(100).height(150).
+                                crop("fill")).
+                 generate("sample.jpg")
+```
 
 Another example, emedding a smaller version of an uploaded image while generating a 90x90 face detection based thumbnail (note the shorter syntax): 
 
-    cloudinary.url().transformation(Transformation().w_(90).h_(90).c_("thumb").g_("face")).generate("woman.jpg")
+```scala
+cloudinary.url().transformation(Transformation().w_(90).h_(90).
+                                c_("thumb").g_("face")).
+                 generate("woman.jpg")
+```
 
 You can provide either a Facebook name or a numeric ID of a Facebook profile or a fan page.  
              
 Embedding a Facebook profile to match your graphic design is very simple:
 
-    cloudinary.url().type("facebook").transformation(Transformation().width(130).height(130).crop("fill").gravity("north_west")).generate("billclinton.jpg")
+```scala
+cloudinary.url().type("facebook").
+                 transformation(Transformation().width(130).height(130).
+                                crop("fill").gravity("north_west")).
+                 generate("billclinton.jpg")
+```
                            
 Same goes for Twitter:
 
-    cloudinary.url().type("twitter_name").generate("billclinton.jpg")
+```scala
+cloudinary.url().type("twitter_name").generate("billclinton.jpg")
+```
 
 ### Upload
 
@@ -132,22 +170,29 @@ Assuming you have your Cloudinary configuration parameters defined (`cloud_name`
     
 The following example uploads a local JPG to the cloud: 
     
-    cloudinary.uploader().upload("my_picture.jpg")
-        
+```scala
+cloudinary.uploader().upload("my_picture.jpg")
+```
+
 The uploaded image is assigned a randomly generated public ID. The image is immediately available for download through a CDN:
 
-    cloudinary.url().generate("abcfrmo8zul1mafopawefg.jpg")
+```scala
+cloudinary.url().generate("abcfrmo8zul1mafopawefg.jpg")
+```
         
     http://res.cloudinary.com/demo/image/upload/abcfrmo8zul1mafopawefg.jpg
 
 You can also specify your own public ID:    
-    
-    import com.cloudinary.parameters.UploadParameters
-    import com.cloudinary.Implicits._
-    
-    cloudinary.uploader().upload("http://www.example.com/image.jpg", UploadParameters(publicId = "sample_remote"))
 
-    cloudinary.url().generate("sample_remote.jpg")
+```scala
+import com.cloudinary.parameters.UploadParameters
+import com.cloudinary.Implicits._
+
+cloudinary.uploader().upload("http://www.example.com/image.jpg", 
+                             UploadParameters(publicId = "sample_remote"))
+
+cloudinary.url().generate("sample_remote.jpg")
+```
 
     http://res.cloudinary.com/demo/image/upload/sample_remote.jpg
         

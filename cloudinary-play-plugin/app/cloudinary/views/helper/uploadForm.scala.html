@@ -1,13 +1,8 @@
-@(callbackUrl:String, params: com.cloudinary.parameters.UploadParameters, args: (Symbol,Any)*)(body: => Html)
+@(callbackUrl:String, params: com.cloudinary.parameters.UploadParameters, args: (Symbol,Any)*)(body: => Html)(implicit cld:com.cloudinary.Cloudinary)
 
-@import play.api.Play.current
-@import cloudinary.plugin.CloudinaryPlugin
-
-@current.plugin[CloudinaryPlugin].map { p =>
-	<form action="@p.cloudinary.url()" method="post" @toHtmlArgs(args.toMap)>
-		@body
-		<input type="hidden" name="callback_url" value="@callbackUrl">
-		<input type="hidden" name="api_key" value="@p.cloudinary.apiKey()">
-		<input type="hidden" name="signature" value="@p.cloudinary.uploader.signRequestParams(params.toMap + ("callbackUrl" -> callbackUrl))">
-	</form> 
-}
+<form action="@{cld.url()}" method="post" @toHtmlArgs(args.toMap)>
+	@body
+	<input type="hidden" name="callback_url" value="@callbackUrl">
+	<input type="hidden" name="api_key" value="@{cld.apiKey()}">
+	<input type="hidden" name="signature" value="@{cld.uploader.signRequestParams(params.toMap + ("callbackUrl" -> callbackUrl))}">
+</form> 
