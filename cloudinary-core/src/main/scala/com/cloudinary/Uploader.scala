@@ -8,9 +8,9 @@ import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 
 import com.ning.http.client.RequestBuilder
-import com.ning.http.multipart.ByteArrayPartSource
-import com.ning.http.multipart.FilePart
-import com.ning.http.multipart.StringPart
+import com.ning.http.client.multipart.ByteArrayPart
+import com.ning.http.client.multipart.FilePart
+import com.ning.http.client.multipart.StringPart
 
 import com.cloudinary.response._
 import com.cloudinary.parameters._
@@ -49,12 +49,12 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     }
 
     file match {
-      case baps:ByteArrayPartSource => apiUrlBuilder.addBodyPart(new FilePart("file", baps))
+      case baps:ByteArrayPart => apiUrlBuilder.addBodyPart(new ByteArrayPart("file", baps.getBytes, null, null, "file"))
       case fp: FilePart => apiUrlBuilder.addBodyPart(fp)
       case f: File => apiUrlBuilder.addBodyPart(new FilePart("file", f))
       case fn: String if !fn.matches(illegalFileName) => apiUrlBuilder.addBodyPart(new FilePart("file", new File(fn)))
-      case body: String => apiUrlBuilder.addBodyPart(new StringPart("file", body, "UTF-8"))
-      case body: Array[Byte] => apiUrlBuilder.addBodyPart(new FilePart("file", new ByteArrayPartSource("file", body)))
+      case body: String => apiUrlBuilder.addBodyPart(new ByteArrayPart("file", body.getBytes("UTF-8"), null, null, "file"))
+      case body: Array[Byte] => apiUrlBuilder.addBodyPart(new ByteArrayPart("file", body, null, null, "file"))
       case null =>
       case _ => throw new IOException("Uprecognized file parameter " + file);
     }
@@ -110,7 +110,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
   private def uploadLargeRawPart(input: InputStream, params: LargeUploadParameters, originalFileName:Option[String], bufferSize: Int, partNumber: Int = 1): Future[LargeRawUploadResponse] = {
     val uploadParams = params.toMap + ("part_number" -> partNumber.toString)
     val (last, buffer) = readChunck(input, bufferSize)
-    val part = new ByteArrayPartSource(originalFileName.getOrElse("file"), buffer)
+    val part = new ByteArrayPart(originalFileName.getOrElse("file"), buffer)
     (partNumber, last) match {
       case (_, true) =>
         input.close()
