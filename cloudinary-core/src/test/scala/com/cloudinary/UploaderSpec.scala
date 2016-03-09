@@ -248,7 +248,7 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
     val error = Await.result(for {
       e <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().categorization("illegal")).recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("not a valid")
+    error.asInstanceOf[BadRequest].message should include("is invalid")
   }
   
   it should "support requesting detection" in {
