@@ -1,7 +1,3 @@
-import SonatypeKeys._
-
-sonatypeSettings
-
 name := "cloudinary-scala-play"
 
 organization := "com.cloudinary"
