@@ -54,7 +54,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
       case body: String => apiUrlBuilder.addBodyPart(new StringPart("file", body, "UTF-8"))
       case body: Array[Byte] => apiUrlBuilder.addBodyPart(new ByteArrayPart("file", body))
       case null =>
-      case _ => throw new IOException("Uprecognized file parameter " + file);
+      case _ => throw new IOException("Unrecognized file parameter " + file);
     }
 
     apiUrlBuilder.build()
