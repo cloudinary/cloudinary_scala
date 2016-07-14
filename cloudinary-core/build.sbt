@@ -36,8 +36,8 @@ pomExtra := {
   
 libraryDependencies ++= Seq(
   "com.ning" % "async-http-client" % "1.9.30",
-  "org.json4s" %% "json4s-native" % "3.2.10",
-  "org.json4s" %% "json4s-ext" % "3.2.10", 
+  "org.json4s" %% "json4s-native" % "3.4.0",
+  "org.json4s" %% "json4s-ext" % "3.4.0",
   "org.scalatest" %% "scalatest" % "2.2.1" % "test")
 
 resolvers ++= Seq("sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots", "sonatype releases" at "https://oss.sonatype.org/content/repositories/releases")

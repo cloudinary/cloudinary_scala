@@ -120,6 +120,27 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
     resources.map{resource => resource.public_id} should equal(List(response.public_id))
   }
 
+  // remove the ignore if the account used for testing supports filenameContains parameter
+  ignore should "allow listing resources by filenameContains" in {
+    val (resources1, resources2, resources3) = Await.result(for {
+      rootUploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId("sample_test_contains"))
+      topUploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder").publicId("sample_test_contains"))
+      subUploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder/sub_folder").publicId("Amphibian_test_contains"))
+      folderMatchUploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder/amphetamines").publicId("benzedrine_test_contains"))
+      resources1Response <- api.resources(`type` = "upload", prefix = "top_folder/", filenameContains = "amp") if rootUploadResponse != null && topUploadResponse != null && subUploadResponse != null && folderMatchUploadResponse != null
+      resources2Response <- api.resources(`type` = "upload", prefix = "top_folder/", filenameContains = "amp", includeSubfolders = false) if rootUploadResponse != null && topUploadResponse != null && subUploadResponse != null && folderMatchUploadResponse != null
+      resources3Response <- api.resources(`type` = "upload", filenameContains = "amp", includeSubfolders = false) if rootUploadResponse != null && topUploadResponse != null && subUploadResponse != null && folderMatchUploadResponse != null
+    } yield (resources1Response.resources, resources2Response.resources, resources3Response.resources), 5 seconds)
+    resources1.map(_.public_id) should contain allOf("top_folder/sample_test_contains", "top_folder/sub_folder/Amphibian_test_contains")
+    resources1.map(_.public_id) should not contain allOf("sample_test_contains", "top_folder/amphetamines/benzedrine_test_contains")
+
+    resources2.map(_.public_id) should contain("top_folder/sample_test_contains")
+    resources2.map(_.public_id) should not contain allOf("sample_test_contains", "top_folder/amphetamines/benzedrine_test_contains", "top_folder/sub_folder/Amphibian_test_contains")
+
+    resources3.map(_.public_id) should contain("sample_test_contains")
+    resources3.map(_.public_id) should not contain allOf("top_folder/sample_test_contains", "top_folder/amphetamines/benzedrine_test_contains", "top_folder/sub_folder/Amphibian_test_contains")
+  }
+
   it should "allow getting a resource's metadata" in {
     val resource = Await.result(api.resource("api_test", coordinates = true), 5 seconds)
     resource.public_id should equal("api_test")
