@@ -10,6 +10,8 @@ import org.scalatest.Matchers
 import parameters._
 import response._
 import Implicits._
+import org.scalamock.scalatest.MockFactory
+
 
 
 object UploadPresetTest extends Tag("com.cloudinary.tags.UploadPresetTest")
@@ -140,15 +142,17 @@ class UploaderSpec extends FlatSpec with Matchers with OptionValues with Inside 
   }
 
   it should "support generating sprites" in {
-    Await.result(
-      cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-        UploadParameters().tags(Set("sprite_test_tag")).publicId("sprite_test_tag_1")).andThen {
-          case _ => cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
-            UploadParameters().tags(Set("sprite_test_tag")).publicId("sprite_test_tag_2"))
-        }, 10 seconds)
-    Await.result(cloudinary.uploader().generateSprite("sprite_test_tag"), 5 seconds).image_infos.size should equal(2)
-    Await.result(cloudinary.uploader().generateSprite("sprite_test_tag", transformation = new Transformation().w_(100)), 5 seconds).css_url should include("w_100")
-    Await.result(cloudinary.uploader().generateSprite("sprite_test_tag", transformation = new Transformation().w_(100), format = "jpg"), 5 seconds).css_url should include("f_jpg,w_100")
+    val sprite_test_tag: String = "sprite_test_tag" + scala.util.Random.nextInt(9999)
+    for {
+      one <- cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
+        UploadParameters().tags(Set(sprite_test_tag)).publicId(sprite_test_tag + "_1"))
+      two <- cloudinary.uploader().upload("http://cloudinary.com/images/logo.png",
+        UploadParameters().tags(Set(sprite_test_tag)).publicId(sprite_test_tag + "_2"))
+    } yield {
+      Await.result(cloudinary.uploader().generateSprite(sprite_test_tag), 5 seconds).image_infos.size should equal(2)
+      Await.result(cloudinary.uploader().generateSprite(sprite_test_tag, transformation = new Transformation().w_(100)), 5 seconds).css_url should include("w_100")
+      Await.result(cloudinary.uploader().generateSprite(sprite_test_tag, transformation = new Transformation().w_(100), format = "jpg"), 5 seconds).css_url should include("f_jpg,w_100")
+    }
   }
 
   it should "support multi" in {

@@ -1,18 +1,21 @@
 package com.cloudinary
 
 import java.util.concurrent.atomic.AtomicReference
+
 import com.ning.http.client.AsyncHttpClientConfig
 import com.ning.http.client.AsyncHttpClient
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import scala.concurrent.Promise
+
+import scala.concurrent.{Future, Promise}
 import com.ning.http.client.Request
+
 import concurrent.ExecutionContext.Implicits.global
 import com.cloudinary.response.RawResponse
 import java.text.SimpleDateFormat
 
 object HttpClient {
-  private val clientHolder: AtomicReference[Option[AsyncHttpClient]] = new AtomicReference(None)
+  private[cloudinary] val clientHolder: AtomicReference[Option[AsyncHttpClient]] = new AtomicReference(None)
 
   private[cloudinary] def newClient(): AsyncHttpClient = {
 
@@ -49,7 +52,7 @@ object HttpClient {
     override def dateFormatter = new SimpleDateFormat("yyyy-MM-dd")
   }
 
-  def executeAndExtractResponse[T](r: Request)(implicit mf: scala.reflect.Manifest[T]) =
+  def executeAndExtractResponse[T](r: Request)(implicit mf: scala.reflect.Manifest[T]): Future[T] =
     executeCloudinaryRequest(r).map {
       j =>
         try {

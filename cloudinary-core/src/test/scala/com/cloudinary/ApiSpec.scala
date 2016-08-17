@@ -1,19 +1,20 @@
 package com.cloudinary
 
-import scala.language.postfixOps
+import java.util
 
-import org.scalatest.Matchers            
-import scala.concurrent.duration._
+import com.cloudinary.Implicits._
+import com.cloudinary.parameters._
+import com.cloudinary.response._
+import com.ning.http.client._
+import org.scalamock.scalatest.MockFactory
+import org.scalatest.{Matchers, _}
+
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Success
-import org.scalatest._
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
-import parameters._
-import response._
-import Implicits._
-
-class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll {
+class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll with BeforeAndAfter with MockFactory {
 
   lazy val cloudinary = {
     val c = new Cloudinary()
@@ -46,6 +47,19 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
       r9 <- api.deleteUploadPreset("api_test_upload_preset3").recover { case _ => "r9 failed" }
       r10 <- api.deleteUploadPreset("api_test_upload_preset4").recover { case _ => "r10 failed" }
     } yield (r1, r2, r3, r4, r5, r6, r7, r8, r9, r10), 20 seconds)
+  }
+
+  def mockHttp() = {
+
+    val mockProvider = mock[AsyncHttpProvider]
+    val asyncHttpConfig = new AsyncHttpClientConfig.Builder()
+    asyncHttpConfig.setUserAgent(Cloudinary.USER_AGENT)
+    HttpClient.clientHolder.set(Some(new AsyncHttpClient(mockProvider, asyncHttpConfig.build())))
+    mockProvider
+  }
+
+  after {
+    HttpClient.clientHolder.set(None)
   }
 
   behavior of "Cloudinary API"
@@ -181,6 +195,19 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
     val transformation = Await.result(api.transformations().map(_.transformations), 5 seconds).find(t => t.name == "c_scale,w_100")
     transformation should not equal (None)
     transformation.get.used should equal(true)
+  }
+
+  it should "allow listing transformations with next_cursor" in {
+    val provider = mockHttp()
+    (provider.execute _) expects where { (request: Request, handler: AsyncHandler[Nothing]) => {
+        val params: util.List[Param] = request.getQueryParams
+
+        params.contains(new Param("next_cursor", "1234567"))
+      }
+    }
+    api.transformations(nextCursor = "1234567")
+
+
   }
 
   it should "allow getting transformation metadata" in {
