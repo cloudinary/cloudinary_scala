@@ -13,6 +13,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import collection.JavaConverters._
 
 class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll with BeforeAndAfter with MockFactory {
 
@@ -199,15 +200,37 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
 
   it should "allow listing transformations with next_cursor" in {
     val provider = mockHttp()
-    (provider.execute _) expects where { (request: Request, handler: AsyncHandler[Nothing]) => {
-        val params: util.List[Param] = request.getQueryParams
-
-        params.contains(new Param("next_cursor", "1234567"))
+    (provider.execute _) expects where { (request: Request, *) => {
+        request.getQueryParams.contains(new Param("next_cursor", "1234567"))
       }
     }
     api.transformations(nextCursor = "1234567")
+  }
 
-
+  it should "allow getting transformation metadata with next_cursor" in {
+    val t = Transformation().c_("scale").w_(100)
+    val provider = mockHttp()
+    inSequence {
+      (provider.execute _) expects where { (request: Request, *) => {
+        request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
+          request.getUrl.matches(".+/c_scale,w_100?.+")
+      }
+      }
+      (provider.execute _) expects where { (request: Request, *) => {
+        request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
+          request.getUrl.matches(".+/c_scale,w_100?.+")
+      }
+      }
+      (provider.execute _) expects where { (request: Request, *) => {
+        request.getQueryParams.contains(new Param("max_results", "111")) &&
+        !request.getQueryParams.asScala.exists( p => p.getName == "next_cursor") &&
+          request.getUrl.matches(".+/c_scale,w_100?.+")
+      }
+      }
+    }
+    api.transformation(t, "1234567")
+    api.transformation(t, nextCursor = "1234567")
+    api.transformation(t, 111)
   }
 
   it should "allow getting transformation metadata" in {
@@ -234,6 +257,42 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
     transformation.allowed_for_strict should equal(true)
     transformation.info should equal(t)
     transformation.used should equal(false)
+  }
+
+
+  it should "allow getting transformation metadata with next_cursor" in {
+    val t = Transformation().c_("scale").w_(100)
+    val provider = mockHttp()
+    inSequence {
+      (provider.execute _) expects where { (request: Request, *) => {
+        request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
+          request.getUrl.matches(".+/api_test_transformation?.+")
+      }
+      }
+      (provider.execute _) expects where { (request: Request, *) => {
+        request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
+          request.getUrl.matches(".+/api_test_transformation?.+")
+      }
+      }
+      (provider.execute _) expects where { (request: Request, *) => {
+        request.getQueryParams.contains(new Param("max_results", "111")) &&
+          !request.getQueryParams.asScala.exists( p => p.getName == "next_cursor") &&
+          request.getUrl.matches(".+/api_test_transformation?.+")
+      }
+      }
+    }
+    api.transformationByName("api_test_transformation", "1234567")
+    api.transformationByName("api_test_transformation", nextCursor = "1234567")
+    api.transformationByName("api_test_transformation", 111)
+  }
+
+  it should "allow listing transformation by name with next_cursor" in {
+    val provider = mockHttp()
+    provider.execute _ expects where { (request: Request, handler: AsyncHandler[Nothing]) => {
+        request.getQueryParams.contains(new Param("next_cursor", "1234567"))
+      }
+    }
+    api.transformationByName("api_test_transformation", nextCursor = "1234567")
   }
 
   it should "allow deleting named transformation" in {

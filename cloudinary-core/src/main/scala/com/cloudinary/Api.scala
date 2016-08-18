@@ -153,10 +153,17 @@ class Api(implicit cloudinary: Cloudinary) {
     callApi[TransformationsResponse](Api.GET, "transformations" :: Nil,
       Map("next_cursor" -> nextCursor, "max_results" -> maxResults))
   }
+
+  // Backward compatible signature
+  def transformationByName(t:String, maxResults: Option[Int]):Future[TransformationResponse] = transformationByName(t, None, maxResults)
+
   def transformationByName(t:String, nextCursor: Option[String] = None, maxResults: Option[Int] = None):Future[TransformationResponse] =
     callApi[TransformationResponse](Api.GET, "transformations" :: t :: Nil,
-      Map("max_results" -> maxResults))
-      
+      Map("next_cursor" -> nextCursor, "max_results" -> maxResults))
+
+  // Backward compatible signature
+  def transformation(t: Transformation, maxResults: Option[Int]):Future[TransformationResponse] = transformation(t, None, maxResults)
+
   def transformation(t: Transformation, nextCursor: Option[String] = None, maxResults: Option[Int] = None):Future[TransformationResponse] =
     transformationByName(t.generate, nextCursor, maxResults)
       
