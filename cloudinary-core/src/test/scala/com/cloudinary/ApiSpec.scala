@@ -28,30 +28,62 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   lazy val api = cloudinary.api()
 
   val testResourcePath = "cloudinary-core/src/test/resources"
+  val prefix = "apiTest"
+  val suffix = scala.util.Random.nextInt(9999).toString
 
-  override def beforeAll() {
+  val apiTest = prefix + suffix
 
-    val options = UploadParameters().publicId("api_test").
-      tags(Set("api_test_tag")).
+  val apiTest1 = prefix + "1" +suffix
+
+  val apiTest2 = prefix + "2" +suffix
+  val apiTest3 = prefix + "3" +suffix
+  val apiTest4 = prefix + "4" +suffix
+  val apiTest5 = prefix + "5" +suffix
+
+  val apiTestTag = apiTest + "Tag" + suffix
+
+  val apiTestUploadPreset = prefix + "UploadPreset" + suffix
+  val apiTestUploadPreset2 = prefix + "UploadPreset2" + suffix
+  val apiTestUploadPreset3 = prefix + "UploadPreset3" + suffix
+  val apiTestUploadPreset4 = prefix + "UploadPreset4" + suffix
+
+  val apiTestByPrefix = prefix + "ByPrefix" + suffix
+
+  val apiTestTransformation = apiTest + "Transformation" + suffix
+  val apiTestTransformation2 = apiTest + "Transformation2" + suffix
+  val apiTestTransformation3 = apiTest + "Transformation3" + suffix
+
+  override def beforeAll(): Unit = {
+    val options = UploadParameters().publicId(apiTest).
+      tags(Set(apiTestTag)).
       context(Map("key" -> "value")).
       customCoordinates(List(CustomCoordinate(10,11,12,13))).
       eager(List(Transformation().w_(100).c_("scale")))
     Await.result(for {
-      r1 <- api.deleteResources(List("api_test", "api_test1", "api_test2", "api_test3", "api_test4", "api_test5", "api_test_by_prefix")).recover { case _ => "r1 failed" }
-      r2 <- api.deleteTransformation("api_test_transformation").recover { case _ => "r2 failed" }
-      r3 <- api.deleteTransformation("api_test_transformation2").recover { case _ => "r3 failed" }
-      r4 <- api.deleteTransformation("api_test_transformation3").recover { case _ => "r4 failed" }
-      r5 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", options).recover { case _ => "r5 failed" }
-      r6 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", options.publicId("api_test1")).recover { case _ => "r6 failed" }
-      r7 <- api.deleteUploadPreset("api_test_upload_preset").recover { case _ => "r7 failed" }
-      r8 <- api.deleteUploadPreset("api_test_upload_preset2").recover { case _ => "r8 failed" }
-      r9 <- api.deleteUploadPreset("api_test_upload_preset3").recover { case _ => "r9 failed" }
-      r10 <- api.deleteUploadPreset("api_test_upload_preset4").recover { case _ => "r10 failed" }
-    } yield (r1, r2, r3, r4, r5, r6, r7, r8, r9, r10), 20 seconds)
+    r5 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", options).recover { case _ => "r5 failed" }
+    r6 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", options.publicId(apiTest1)).recover { case _ => "r6 failed" }
+    } yield (r5, r6), 20 seconds)
+  }
+  override def afterAll() {
+
+    Await.result(for {
+      r1 <- api.deleteResources(List(apiTest, apiTest1, apiTest2, apiTest3, apiTest4, apiTest5, apiTestByPrefix)).recover { case _ => "r1 failed" }
+      r2 <- api.deleteTransformation(apiTestTransformation).recover { case _ => "r2 failed" }
+      r3 <- api.deleteTransformation(apiTestTransformation2).recover { case _ => "r3 failed" }
+      r4 <- api.deleteTransformation(apiTestTransformation3).recover { case _ => "r4 failed" }
+      r7 <- api.deleteUploadPreset(apiTestUploadPreset).recover { case _ => "r7 failed" }
+      r8 <- api.deleteUploadPreset(apiTestUploadPreset2).recover { case _ => "r8 failed" }
+      r9 <- api.deleteUploadPreset(apiTestUploadPreset3).recover { case _ => "r9 failed" }
+      r10 <- api.deleteUploadPreset(apiTestUploadPreset4).recover { case _ => "r10 failed" }
+    } yield (r1, r2, r3, r4, r7, r8, r9, r10), 20 seconds)
   }
 
-  def mockHttp() = {
-
+  /**
+    * Mock the AsyncHttpProvider so that calls do not invoke the server side.
+    * Expectations can be set on the execute method of AsyncHttpProvider.
+    * @return the mocked instance
+    */
+  def mockHttp(): AsyncHttpProvider = {
     val mockProvider = mock[AsyncHttpProvider]
     val asyncHttpConfig = new AsyncHttpClientConfig.Builder()
     asyncHttpConfig.setUserAgent(Cloudinary.USER_AGENT)
@@ -60,6 +92,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   }
 
   after {
+    // reset the http client in case a mock has been used
     HttpClient.clientHolder.set(None)
   }
 
@@ -70,7 +103,7 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   }
 
   it should "allow listing resources" in {
-    val v = Await.result(api.resources().map(response => response.resources.find(r => r.public_id == "api_test" && r.`type` == "upload")), 5 seconds)
+    val v = Await.result(api.resources(maxResults = 500).map(response => response.resources.find(r => r.public_id == apiTest && r.`type` == "upload")), 5 seconds)
     v.isDefined should be(true)
   }
 
@@ -86,40 +119,40 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   it should "allow listing resources by type" in {
     Await.result(api.resources(`type` = "upload", tags = true, context = true).map {
       response =>
-        response.resources.map(_.public_id).toSet should contain("api_test")
-        response.resources.map(_.tags).toSet should contain(List("api_test_tag"))
+        response.resources.map(_.public_id).toSet should contain(apiTest)
+        response.resources.map(_.tags).toSet should contain(List(apiTestTag))
         response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 
   it should "allow listing resources by prefix" in {
-    Await.result(api.resources(`type` = "upload", prefix = "api_test", tags = true, context = true).map {
+    Await.result(api.resources(`type` = "upload", prefix = apiTest, tags = true, context = true).map {
       response =>
-        response.resources.map(_.public_id).foreach(_ should startWith("api_test"))
-        response.resources.map(_.tags).toSet should contain(List("api_test_tag"))
+        response.resources.map(_.public_id).foreach(_ should startWith(apiTest))
+        response.resources.map(_.tags).toSet should contain(List(apiTestTag))
         response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 
   it should "allow specifying direction when listing resources" in {
-    Await.result(api.resourcesByTag("api_test_tag", direction = Api.ASCENDING), 5 seconds).resources.reverse should equal(
-      Await.result(api.resourcesByTag("api_test_tag", direction = Api.DESCENDING), 5 seconds).resources)
+    Await.result(api.resourcesByTag(apiTestTag, direction = Api.ASCENDING), 5 seconds).resources.reverse should equal(
+      Await.result(api.resourcesByTag(apiTestTag, direction = Api.DESCENDING), 5 seconds).resources)
   }
 
   it should "allow listing resources by tag" in {
-    Await.result(api.resourcesByTag("api_test_tag", tags = true, context = true).map {
+    Await.result(api.resourcesByTag(apiTestTag, tags = true, context = true).map {
       response =>
-        response.resources.map(_.public_id).toSet should equal(Set("api_test", "api_test1"))
-        response.resources.map(_.tags).toSet should contain(List("api_test_tag"))
+        response.resources.map(_.public_id).toSet should equal(Set(apiTest, apiTest1))
+        response.resources.map(_.tags).toSet should contain(List(apiTestTag))
         response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 
   it should "allow listing resources by public id" in {
-    Await.result(api.resourcesByIds(List("api_test", "api_test1"), tags = true, context = true).map {
+    Await.result(api.resourcesByIds(List(apiTest, apiTest1), tags = true, context = true).map {
       response =>
-        response.resources.map(_.public_id).toSet should equal(Set("api_test", "api_test1"))
-        response.resources.map(_.tags).toSet should contain(List("api_test_tag"))
+        response.resources.map(_.public_id).toSet should equal(Set(apiTest, apiTest1))
+        response.resources.map(_.tags).toSet should contain(List(apiTestTag))
         response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
@@ -136,8 +169,8 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   }
 
   it should "allow getting a resource's metadata" in {
-    val resource = Await.result(api.resource("api_test", coordinates = true), 5 seconds)
-    resource.public_id should equal("api_test")
+    val resource = Await.result(api.resource(apiTest, coordinates = true), 5 seconds)
+    resource.public_id should equal(apiTest)
     resource.bytes should equal(3381)
     resource.derived.size should equal(1)
     resource.customCoordinates should equal(List(CustomCoordinate(10,11,12,13)))
@@ -146,11 +179,11 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   it should "allow deleting derived resource" in {
     val (resource, resourceAfterDelete) = Await.result(for {
       r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().
-        publicId("api_test3").
+        publicId(apiTest3).
         eager(List(Transformation().w_(101).c_("scale"))))
-      resource <- api.resource("api_test3") if (r1 != null)
+      resource <- api.resource(apiTest3) if (r1 != null)
       r2 <- api.deleteDerivedResources(resource.derived.headOption.map(_.id).toList) if resource != null
-      resourceAfterDelete <- api.resource("api_test3") if (r2 != null)
+      resourceAfterDelete <- api.resource(apiTest3) if (r2 != null)
     } yield (resource, resourceAfterDelete), 5 seconds)
     resource.derived.size should equal(1)
     resourceAfterDelete.derived.size should equal(0)
@@ -158,38 +191,40 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
 
   it should "allow deleting resources" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("api_test3"))
-      resource <- api.resource("api_test3") if (r1 != null)
-      r2 <- api.deleteResources(List("apit_test", "api_test2", "api_test3")) if resource != null
-      throwable <- api.resource("api_test3").recover { case e => e } if (r2 != null)
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest3))
+      resource <- api.resource(apiTest3) if (r1 != null)
+      r2 <- api.deleteResources(List("apit_test", apiTest2, apiTest3)) if resource != null
+      throwable <- api.resource(apiTest3).recover { case e => e } if (r2 != null)
     } yield { throwable }, 5 seconds).isInstanceOf[NotFound] should be(true)
   }
 
   it should "allow deleting resources by prefix" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("api_test_by_prefix"))
-      resource <- api.resource("api_test_by_prefix") if r1 != null
-      r2 <- api.deleteResourcesByPrefix("api_test_by") if resource != null
-      throwable <- api.resource("api_test_by_prefix").recover { case e => e } if r2 != null
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTestByPrefix))
+      resource <- api.resource(apiTestByPrefix) if r1 != null
+      r2 <- api.deleteResourcesByPrefix(apiTestByPrefix.substring(0, 9)) if resource != null
+      throwable <- api.resource(apiTestByPrefix).recover { case e => e } if r2 != null
     } yield { throwable }, 5 seconds).isInstanceOf[NotFound] should be(true)
   }
 
+  val apiTestTagForDelete: String = prefix + "TagForDelete" + suffix
+
   it should "allow deleting resources by tags" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("api_test4").tags(Set("api_test_tag_for_delete")))
-      resource <- api.resource("api_test4") if (r1 != null)
-      r2 <- api.deleteResourcesByTag("api_test_tag_for_delete") if resource != null
-      throwable <- api.resource("api_test4").recover { case e => e } if (r2 != null)
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest4).tags(Set(apiTestTagForDelete)))
+      resource <- api.resource(apiTest4) if (r1 != null)
+      r2 <- api.deleteResourcesByTag(apiTestTagForDelete) if resource != null
+      throwable <- api.resource(apiTest4).recover { case e => e } if (r2 != null)
     } yield { throwable }, 5 seconds) shouldBe a[NotFound]
   }
 
   it should "allow listing tags" in {
-    Await.result(api.tags().map(r => r.tags), 5 seconds) should contain("api_test_tag")
+    Await.result(api.tags().map(r => r.tags), 5 seconds) should contain(apiTestTag)
   }
 
   it should "allow listing tags by prefix" in {
-    Await.result(api.tags(prefix = "api_test").map(r => r.tags), 5 seconds) should contain("api_test_tag")
-    Await.result(api.tags(prefix = "api_test_no_such_tag").map(r => r.tags), 5 seconds) should equal(List())
+    Await.result(api.tags(prefix = apiTest).map(r => r.tags), 5 seconds) should contain(apiTestTag)
+    Await.result(api.tags(prefix = apiTest + "NoSuchTag").map(r => r.tags), 5 seconds) should equal(List())
   }
 
   it should "allow listing transformations" in {
@@ -205,32 +240,6 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
       }
     }
     api.transformations(nextCursor = "1234567")
-  }
-
-  it should "allow getting transformation metadata with next_cursor" in {
-    val t = Transformation().c_("scale").w_(100)
-    val provider = mockHttp()
-    inSequence {
-      (provider.execute _) expects where { (request: Request, *) => {
-        request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
-          request.getUrl.matches(".+/c_scale,w_100?.+")
-      }
-      }
-      (provider.execute _) expects where { (request: Request, *) => {
-        request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
-          request.getUrl.matches(".+/c_scale,w_100?.+")
-      }
-      }
-      (provider.execute _) expects where { (request: Request, *) => {
-        request.getQueryParams.contains(new Param("max_results", "111")) &&
-        !request.getQueryParams.asScala.exists( p => p.getName == "next_cursor") &&
-          request.getUrl.matches(".+/c_scale,w_100?.+")
-      }
-      }
-    }
-    api.transformation(t, "1234567")
-    api.transformation(t, nextCursor = "1234567")
-    api.transformation(t, 111)
   }
 
   it should "allow getting transformation metadata" in {
@@ -251,8 +260,8 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   it should "allow creating named transformation" in {
     val t = Transformation().c_("scale").w_(102)
     val transformation = Await.result(for {
-      r1 <- api.createTransformation("api_test_transformation", t)
-      transformation <- api.transformationByName("api_test_transformation")
+      r1 <- api.createTransformation(apiTestTransformation, t)
+      transformation <- api.transformationByName(apiTestTransformation)
     } yield transformation, 5 seconds)
     transformation.allowed_for_strict should equal(true)
     transformation.info should equal(t)
@@ -264,43 +273,47 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
     val t = Transformation().c_("scale").w_(100)
     val provider = mockHttp()
     inSequence {
-      (provider.execute _) expects where { (request: Request, *) => {
-        request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
-          request.getUrl.matches(".+/api_test_transformation?.+")
+      (provider.execute _) expects where {
+        (request: Request, *) => {
+          request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
+            request.getUrl.matches(".+/" + apiTestTransformation + "?.+")
+        }
       }
+      (provider.execute _) expects where {
+        (request: Request, *) => {
+          request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
+            request.getUrl.matches(".+/" + apiTestTransformation + "?.+")
+        }
       }
-      (provider.execute _) expects where { (request: Request, *) => {
-        request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
-          request.getUrl.matches(".+/api_test_transformation?.+")
-      }
-      }
-      (provider.execute _) expects where { (request: Request, *) => {
-        request.getQueryParams.contains(new Param("max_results", "111")) &&
-          !request.getQueryParams.asScala.exists( p => p.getName == "next_cursor") &&
-          request.getUrl.matches(".+/api_test_transformation?.+")
-      }
+      (provider.execute _) expects where {
+        (request: Request, *) => {
+          request.getQueryParams.contains(new Param("max_results", "111")) &&
+            !request.getQueryParams.asScala.exists(p => p.getName == "next_cursor") &&
+            request.getUrl.matches(".+/" + apiTestTransformation + "?.+")
+        }
       }
     }
-    api.transformationByName("api_test_transformation", "1234567")
-    api.transformationByName("api_test_transformation", nextCursor = "1234567")
-    api.transformationByName("api_test_transformation", 111)
+    api.transformationByName(apiTestTransformation, "1234567")
+    api.transformationByName(apiTestTransformation, nextCursor = "1234567")
+    api.transformationByName(apiTestTransformation, 111)
   }
 
   it should "allow listing transformation by name with next_cursor" in {
     val provider = mockHttp()
-    provider.execute _ expects where { (request: Request, handler: AsyncHandler[Nothing]) => {
+    provider.execute _ expects where {
+      (request: Request, handler: AsyncHandler[Nothing]) => {
         request.getQueryParams.contains(new Param("next_cursor", "1234567"))
       }
     }
-    api.transformationByName("api_test_transformation", nextCursor = "1234567")
+    api.transformationByName(apiTestTransformation, nextCursor = "1234567")
   }
 
   it should "allow deleting named transformation" in {
     Await.result(for {
-      r1 <- api.createTransformation("api_test_transformation2", Transformation().c_("scale").w_(103))
-      t1 <- api.transformationByName("api_test_transformation2") if r1 != null
-      r2 <- api.deleteTransformation("api_test_transformation2") if t1 != null
-      throwable <- api.transformationByName("api_test_transformation2").recover { case e => e } if r2 != null
+      r1 <- api.createTransformation(apiTestTransformation2, Transformation().c_("scale").w_(103))
+      t1 <- api.transformationByName(apiTestTransformation2) if r1 != null
+      r2 <- api.deleteTransformation(apiTestTransformation2) if t1 != null
+      throwable <- api.transformationByName(apiTestTransformation2).recover { case e => e } if r2 != null
     } yield throwable, 5 seconds) shouldBe a[NotFound]
   }
 
@@ -308,9 +321,9 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
     val t1 = Transformation().c_("scale").w_(102)
     val t2 = Transformation().c_("scale").w_(103)
     val tr = Await.result(for {
-      r1 <- api.createTransformation("api_test_transformation3", t1)
-      r2 <- api.updateTransformation("api_test_transformation3", unsafeUpdate = t2) if r1 != null
-      tr <- api.transformationByName("api_test_transformation3") if r2 != null
+      r1 <- api.createTransformation(apiTestTransformation3, t1)
+      r2 <- api.updateTransformation(apiTestTransformation3, unsafeUpdate = t2) if r1 != null
+      tr <- api.transformationByName(apiTestTransformation3) if r2 != null
     } yield tr, 5 seconds)
     tr.info should equal(t2)
     tr.used should equal(false)
@@ -327,38 +340,38 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
 
   it should "allow creating and listing upload_presets" in {
     Await.result(for {
-      r1 <- api.createUploadPreset(UploadPreset("api_test_upload_preset", settings = UploadParameters().folder("folder")))
-      r2 <- api.createUploadPreset(UploadPreset("api_test_upload_preset2", settings = UploadParameters().folder("folder2"))) if r1 != null
-      r3 <- api.createUploadPreset(UploadPreset("api_test_upload_preset3", settings = UploadParameters().folder("folder3"))) if r2 != null
+      r1 <- api.createUploadPreset(UploadPreset(apiTestUploadPreset, settings = UploadParameters().folder("folder")))
+      r2 <- api.createUploadPreset(UploadPreset(apiTestUploadPreset2, settings = UploadParameters().folder("folder2"))) if r1 != null
+      r3 <- api.createUploadPreset(UploadPreset(apiTestUploadPreset3, settings = UploadParameters().folder("folder3"))) if r2 != null
       presets <- api.uploadPresets() if r3 != null
-      d1 <- api.deleteUploadPreset("api_test_upload_preset") if presets != null
-      d2 <- api.deleteUploadPreset("api_test_upload_preset2") if presets != null
-      d3 <- api.deleteUploadPreset("api_test_upload_preset3") if presets != null
-    } yield presets, 5 seconds).presets.take(3).map{_.name} should equal(List("api_test_upload_preset3", "api_test_upload_preset2", "api_test_upload_preset"))
+      d1 <- api.deleteUploadPreset(apiTestUploadPreset) if presets != null
+      d2 <- api.deleteUploadPreset(apiTestUploadPreset2) if presets != null
+      d3 <- api.deleteUploadPreset(apiTestUploadPreset3) if presets != null
+    } yield presets, 5 seconds).presets.take(3).map{_.name} should equal(List(apiTestUploadPreset3, apiTestUploadPreset2, apiTestUploadPreset))
   }
 
   it should "allow getting a single upload_preset" in {
     val (presetName, preset) = Await.result(for {
       result <- api.createUploadPreset(
-        UploadPreset(name = null, unsigned = true, 
-                     settings = UploadParameters().folder("folder").transformation(
-                    		 					  	Transformation().width(100).crop("scale"))
-                    		 					  .tags(Set("a","b","c"))
-                                    .context(Map("a" -> "b", "c" -> "d"))))
+        UploadPreset(name = null, unsigned = true,
+          settings = UploadParameters().folder("folder").transformation(
+            Transformation().width(100).crop("scale"))
+            .tags(Set("a", "b", "c"))
+            .context(Map("a" -> "b", "c" -> "d"))))
       presetResponse <- api.uploadPreset(result.name)
       deleteResult <- api.deleteUploadPreset(presetResponse.preset.name)
-      } yield (result.name, presetResponse.preset), 5 seconds)
+    } yield (result.name, presetResponse.preset), 5 seconds)
     preset.name should equal(presetName)
     preset.unsigned should be(true)
     preset.settings("folder") should equal("folder")
     preset.settings("transformation") should equal(Transformation(Map("width" -> 100, "crop" -> "scale") :: Nil))
     preset.settings("context") should equal(Map("a" -> "b", "c" -> "d"))
-    preset.settings("tags")should equal(Set("a","b","c"))
+    preset.settings("tags") should equal(Set("a", "b", "c"))
   }
 
   it should "allow deleting upload_presets" in {
     Await.result(for {
-      result <- api.createUploadPreset(UploadPreset(name = "api_test_upload_preset4",  settings = UploadParameters().folder("folder")))
+      result <- api.createUploadPreset(UploadPreset(name = apiTestUploadPreset4,  settings = UploadParameters().folder("folder")))
       presetResult <- api.uploadPreset(result.name)
       deleteResult <- api.deleteUploadPreset(result.name) if presetResult != null
       e <- api.uploadPreset(result.name).recover{case e => e} if deleteResult != null
@@ -475,10 +488,10 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   //Remove ignore to test delete all - note use with care!!!
   ignore should "allow deleting all resources" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("api_test5").eager(List(Transformation().w_(0.2).c_("scale"))))
-      resource1 <- api.resource("api_test5") if (r1 != null)
+      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest5).eager(List(Transformation().w_(0.2).c_("scale"))))
+      resource1 <- api.resource(apiTest5) if (r1 != null)
       r2 <- api.deleteAllResources(keepOriginal = true) if resource1 != null
-      resource2 <- api.resource("api_test5")
+      resource2 <- api.resource(apiTest5)
     } yield {
       resource1.derived.length should equal(1)
       resource2.derived.length should equal(0)
