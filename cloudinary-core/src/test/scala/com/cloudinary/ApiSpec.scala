@@ -1,6 +1,7 @@
 package com.cloudinary
 
 import java.util
+import java.util.Date
 
 import com.cloudinary.Implicits._
 import com.cloudinary.parameters._
@@ -158,14 +159,14 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   }
 
   it should "allow listing resources by start date" in {
-    Thread.sleep(2000)
-    val startAt = new java.util.Date
-    Thread.sleep(2000)
-    val (response, resources) = Await.result(for {
-      uploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png")
-      resourcesResponse <- api.resources(`type` = "upload", startAt = Some(startAt), direction = Api.ASCENDING) if uploadResponse != null
-    } yield (uploadResponse, resourcesResponse.resources), 5 seconds)
-    resources.map{resource => resource.public_id} should equal(List(response.public_id))
+    val provider = mockHttp()
+    val startAt: Date = new java.util.Date()
+    (provider.execute _) expects where { (request: Request, *) => {
+      request.getQueryParams.contains(new Param("startAt", startAt.toString)) &&
+        request.getQueryParams.contains(new Param("direction", Api.ASCENDING.toString))
+    }
+    }
+    api.resources(`type` = "upload", startAt = Some(startAt), direction = Api.ASCENDING)
   }
 
   it should "allow getting a resource's metadata" in {
