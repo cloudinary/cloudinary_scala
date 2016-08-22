@@ -1,7 +1,9 @@
 package com.cloudinary
 
+import java.net.URLEncoder
+import java.text.{DateFormat, SimpleDateFormat}
 import java.util
-import java.util.Date
+import java.util.{Date, TimeZone}
 
 import com.cloudinary.Implicits._
 import com.cloudinary.parameters._
@@ -159,14 +161,16 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
   }
 
   it should "allow listing resources by start date" in {
+    val df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss zzz")
+    df.setTimeZone(TimeZone.getTimeZone("UTC"))
     val provider = mockHttp()
-    val startAt: Date = new java.util.Date()
+    val startAt = df.parse("22 Aug 2016 07:57:34 UTC")
     (provider.execute _) expects where { (request: Request, *) => {
-      request.getQueryParams.contains(new Param("startAt", startAt.toString)) &&
-        request.getQueryParams.contains(new Param("direction", Api.ASCENDING.toString))
+      request.getQueryParams.contains(new Param("start_at", "22%20Aug%202016%2007%3A57%3A34%20UTC%20GMT")) &&
+        request.getQueryParams.contains(new Param("direction", "asc"))
     }
     }
-    api.resources(`type` = "upload", startAt = Some(startAt), direction = Api.ASCENDING)
+    api.resources(`type` = "upload", startAt = Some(startAt), direction = Some(Api.ASCENDING))
   }
 
   it should "allow getting a resource's metadata" in {
