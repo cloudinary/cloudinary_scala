@@ -18,7 +18,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import collection.JavaConverters._
 
-class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll with BeforeAndAfter with MockFactory {
+class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll with BeforeAndAfter{
 
   lazy val cloudinary = {
     val c = new Cloudinary()
@@ -79,24 +79,6 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
       r9 <- api.deleteUploadPreset(apiTestUploadPreset3).recover { case _ => "r9 failed" }
       r10 <- api.deleteUploadPreset(apiTestUploadPreset4).recover { case _ => "r10 failed" }
     } yield (r1, r2, r3, r4, r7, r8, r9, r10), 20 seconds)
-  }
-
-  /**
-    * Mock the AsyncHttpProvider so that calls do not invoke the server side.
-    * Expectations can be set on the execute method of AsyncHttpProvider.
-    * @return the mocked instance
-    */
-  def mockHttp(): AsyncHttpProvider = {
-    val mockProvider = mock[AsyncHttpProvider]
-    val asyncHttpConfig = new AsyncHttpClientConfig.Builder()
-    asyncHttpConfig.setUserAgent(Cloudinary.USER_AGENT)
-    HttpClient.clientHolder.set(Some(new AsyncHttpClient(mockProvider, asyncHttpConfig.build())))
-    mockProvider
-  }
-
-  after {
-    // reset the http client in case a mock has been used
-    HttpClient.clientHolder.set(None)
   }
 
   behavior of "Cloudinary API"
@@ -166,8 +148,9 @@ class ApiSpec extends FlatSpec with Matchers with OptionValues with Inside with 
     val provider = mockHttp()
     val startAt = df.parse("22 Aug 2016 07:57:34 UTC")
     (provider.execute _) expects where { (request: Request, *) => {
-      request.getQueryParams.contains(new Param("start_at", "22%20Aug%202016%2007%3A57%3A34%20UTC%20GMT")) &&
-        request.getQueryParams.contains(new Param("direction", "asc"))
+      val params = getQuery(request)
+      params.contains(("start_at", "22 Aug 2016 07:57:34 UTC GMT")) &&
+        params.contains(("direction", "asc"))
     }
     }
     api.resources(`type` = "upload", startAt = Some(startAt), direction = Some(Api.ASCENDING))
