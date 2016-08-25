@@ -20,13 +20,6 @@ import collection.JavaConverters._
 
 class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll{
 
-  lazy val cloudinary = {
-    val c = new Cloudinary()
-    if (c.getStringConfig("api_key", None).isEmpty) {
-      System.err.println("Please setup environment for Upload test to run")
-    }
-    c
-  }
 
   lazy val api = cloudinary.api()
 
@@ -145,7 +138,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   it should "allow listing resources by start date" in {
     val df = new SimpleDateFormat("dd MMM yyyy HH:mm:ss zzz")
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
-    val provider = mockHttp()
+    val (provider, api) = mockApi()
     val startAt = df.parse("22 Aug 2016 07:57:34 UTC")
     (provider.execute _) expects where { (request: Request, *) => {
       val params = getQuery(request)
@@ -207,7 +200,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing tags" in {
-    Await.result(api.tags().map(r => r.tags), 5 seconds) should contain(apiTestTag)
+    Await.result(api.tags(maxResults = 500).map(r => r.tags), 5 seconds) should contain(apiTestTag)
   }
 
   it should "allow listing tags by prefix" in {
@@ -222,7 +215,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing transformations with next_cursor" in {
-    val provider = mockHttp()
+    val (provider, api) = mockApi()
     (provider.execute _) expects where { (request: Request, *) => {
         request.getQueryParams.contains(new Param("next_cursor", "1234567"))
       }
@@ -259,7 +252,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
 
   it should "allow getting transformation metadata with next_cursor" in {
     val t = Transformation().c_("scale").w_(100)
-    val provider = mockHttp()
+    val (provider, api) = mockApi()
     inSequence {
       (provider.execute _) expects where {
         (request: Request, *) => {
@@ -287,7 +280,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing transformation by name with next_cursor" in {
-    val provider = mockHttp()
+    val (provider, api) = mockApi()
     provider.execute _ expects where {
       (request: Request, handler: AsyncHandler[Nothing]) => {
         request.getQueryParams.contains(new Param("next_cursor", "1234567"))

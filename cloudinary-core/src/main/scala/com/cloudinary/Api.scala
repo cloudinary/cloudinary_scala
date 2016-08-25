@@ -10,7 +10,7 @@ import parameters.UpdateParameters
 import java.text.SimpleDateFormat
 
 object Api {
-  abstract class HttpMethod(val method: String);
+  abstract class HttpMethod(val method: String)
   case object GET extends HttpMethod("GET")
   case object POST extends HttpMethod("POST")
   case object PUT extends HttpMethod("PUT")
@@ -22,7 +22,9 @@ object Api {
 }
 
 class Api(implicit cloudinary: Cloudinary) {
-  
+
+  private[cloudinary] var httpclient: HttpClient = new HttpClient
+
   def createRequest(
     method: Api.HttpMethod,
     uri: Iterable[String],
@@ -57,13 +59,14 @@ class Api(implicit cloudinary: Cloudinary) {
 
     apiUrlBuilder.setRealm(realm).build()
   }
-  
+
+
   def callApi[T](
     method: Api.HttpMethod,
     uri: Iterable[String],
     params: Map[String, Any])(implicit mf: scala.reflect.Manifest[T]): Future[T] = {
     val request = createRequest(method, uri, params)
-    HttpClient.executeAndExtractResponse[T](request)
+    httpclient.executeAndExtractResponse[T](request)
   }
   
   def callApiRaw(
@@ -71,7 +74,7 @@ class Api(implicit cloudinary: Cloudinary) {
     uri: Iterable[String],
     params: Map[String, Any]) = {
     val request = createRequest(method, uri, params)
-    HttpClient.executeCloudinaryRequest(request)
+    httpclient.executeCloudinaryRequest(request)
   }
 
   def ping() =

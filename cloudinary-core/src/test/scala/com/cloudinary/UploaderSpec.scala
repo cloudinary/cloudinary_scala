@@ -17,13 +17,6 @@ object UploadPresetTest extends Tag("com.cloudinary.tags.UploadPresetTest")
 object EagerTest extends Tag("com.cloudinary.tags.EagerTest")
 
 class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with Inside {
-  lazy val cloudinary = {
-    val c = new Cloudinary()
-    if (c.getStringConfig("api_key", None).isEmpty) {
-      System.err.println("Please setup environment for Upload test to run")
-    }
-    c
-  }
 
   val testResourcePath = "cloudinary-core/src/test/resources"
 
@@ -142,7 +135,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
 
   it should "support generating sprites" in {
     val sprite_test_tag: String = "sprite_test_tag" + scala.util.Random.nextInt(9999)
-    val provider = mockHttp()
+    val (provider, uploader )= mockUploader()
     val tagPart: StringPart = new StringPart("tag", sprite_test_tag, "UTF-8")
     (provider.execute _) expects where { (request: Request, *) => {
       val map = getParts(request)
@@ -161,9 +154,9 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
         map.contains(("transformation", "f_jpg,w_100"))
     }
     }
-    cloudinary.uploader().generateSprite(sprite_test_tag)
-    cloudinary.uploader().generateSprite(sprite_test_tag, transformation = new Transformation().w_(100))
-    cloudinary.uploader().generateSprite(sprite_test_tag, transformation = new Transformation().w_(100), format = "jpg")
+    uploader.generateSprite(sprite_test_tag)
+    uploader.generateSprite(sprite_test_tag, transformation = new Transformation().w_(100))
+    uploader.generateSprite(sprite_test_tag, transformation = new Transformation().w_(100), format = "jpg")
   }
 
   it should "support multi" in {
