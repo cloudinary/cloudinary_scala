@@ -17,7 +17,7 @@ import concurrent.ExecutionContext.Implicits.global
 
 class Uploader(implicit val cloudinary: Cloudinary) {
 
-  private[cloudinary] var httpclient: HttpClient = new HttpClient
+  private[cloudinary] val httpclient: HttpClient = new HttpClient
 
   def signRequestParams(params: Map[String, Any]) = {
     val paramsAndTimeStamp = params + ("timestamp" -> (System.currentTimeMillis() / 1000L).toLong.toString)

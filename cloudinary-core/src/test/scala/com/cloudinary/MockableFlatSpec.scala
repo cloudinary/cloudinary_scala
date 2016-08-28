@@ -30,23 +30,27 @@ class MockableFlatSpec extends FlatSpec with MockFactory with BeforeAndAfterEach
     val mockProvider: AsyncHttpProvider = mock[AsyncHttpProvider]
     val asyncHttpConfig = new AsyncHttpClientConfig.Builder()
     asyncHttpConfig.setUserAgent(Cloudinary.USER_AGENT)
-    val httpclient = new HttpClient
-    httpclient.client = new AsyncHttpClient(mockProvider, asyncHttpConfig.build())
-    (mockProvider, httpclient)
+    (mockProvider, new AsyncHttpClient(mockProvider, asyncHttpConfig.build()))
   }
 
+  /**
+    * Returns an instance of [[com.cloudinary.Api Api]] with a mocked [[com.ning.http.client.AsyncHttpProvider AsyncHttpProvider]]
+    */
   def mockApi() = {
     val api = cloudinary.api()
-    val (mockProvider, httpclient) = mockHttp()
-    api.httpclient = httpclient
+    val (mockProvider, client) = mockHttp()
+    api.httpclient.client = client
     (mockProvider, api)
   }
 
 
+  /**
+    * Returns an instance of [[com.cloudinary.Uploader Uploader]] with a mocked [[com.ning.http.client.AsyncHttpProvider AsyncHttpProvider]]
+    */
   def mockUploader() = {
     val uploader = cloudinary.uploader()
-    val (mockProvider, httpclient) = mockHttp()
-    uploader.httpclient = httpclient
+    val (mockProvider, client) = mockHttp()
+    uploader.httpclient.client = client
     (mockProvider, uploader)
   }
 

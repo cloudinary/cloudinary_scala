@@ -23,7 +23,7 @@ object Api {
 
 class Api(implicit cloudinary: Cloudinary) {
 
-  private[cloudinary] var httpclient: HttpClient = new HttpClient
+  private[cloudinary] val httpclient: HttpClient = new HttpClient
 
   def createRequest(
     method: Api.HttpMethod,
