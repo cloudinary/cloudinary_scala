@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cloudinary/cloudinary_scala.svg)](https://travis-ci.org/cloudinary/cloudinary_scala)
+
 Cloudinary
 ==========
 

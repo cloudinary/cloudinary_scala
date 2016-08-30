@@ -10,31 +10,25 @@ import parameters.UpdateParameters
 import java.text.SimpleDateFormat
 
 object Api {
-
-  abstract class HttpMethod(val method: String);
-
+  abstract class HttpMethod(val method: String)
   case object GET extends HttpMethod("GET")
-
   case object POST extends HttpMethod("POST")
-
   case object PUT extends HttpMethod("PUT")
-
   case object DELETE extends HttpMethod("DELETE")
-
-  abstract class ListDirection(val dir: String)
-
+  
+  abstract class ListDirection(val dir:String)
   case object ASCENDING extends ListDirection("asc")
-
   case object DESCENDING extends ListDirection("desc")
-
 }
 
 class Api(implicit cloudinary: Cloudinary) {
 
+  private[cloudinary] val httpclient: HttpClient = new HttpClient
+
   def createRequest(
-                     method: Api.HttpMethod,
-                     uri: Iterable[String],
-                     params: Map[String, Any]) = {
+    method: Api.HttpMethod,
+    uri: Iterable[String],
+    params: Map[String, Any]) = {
     val apiUrl: String =
       (cloudinary.cloudinaryApiUrlPrefix() :: uri.toList).filterNot(_.isEmpty()).mkString("/")
 
@@ -67,19 +61,19 @@ class Api(implicit cloudinary: Cloudinary) {
   }
 
   def callApi[T](
-                  method: Api.HttpMethod,
-                  uri: Iterable[String],
-                  params: Map[String, Any])(implicit mf: scala.reflect.Manifest[T]): Future[T] = {
+    method: Api.HttpMethod,
+    uri: Iterable[String],
+    params: Map[String, Any])(implicit mf: scala.reflect.Manifest[T]): Future[T] = {
     val request = createRequest(method, uri, params)
-    HttpClient.executeAndExtractResponse[T](request)
+    httpclient.executeAndExtractResponse[T](request)
   }
 
   def callApiRaw(
-                  method: Api.HttpMethod,
-                  uri: Iterable[String],
-                  params: Map[String, Any]) = {
+    method: Api.HttpMethod,
+    uri: Iterable[String],
+    params: Map[String, Any]) = {
     val request = createRequest(method, uri, params)
-    HttpClient.executeCloudinaryRequest(request)
+    httpclient.executeCloudinaryRequest(request)
   }
 
   def ping() =
@@ -182,14 +176,20 @@ class Api(implicit cloudinary: Cloudinary) {
       Map("next_cursor" -> nextCursor, "max_results" -> maxResults))
   }
 
-  def transformationByName(t: String, maxResults: Option[Int] = None): Future[TransformationResponse] =
+  // Backward compatible signature
+  def transformationByName(t:String, maxResults: Option[Int]):Future[TransformationResponse] = transformationByName(t, None, maxResults)
+
+  def transformationByName(t:String, nextCursor: Option[String] = None, maxResults: Option[Int] = None):Future[TransformationResponse] =
     callApi[TransformationResponse](Api.GET, "transformations" :: t :: Nil,
-      Map("max_results" -> maxResults))
+      Map("next_cursor" -> nextCursor, "max_results" -> maxResults))
 
-  def transformation(t: Transformation, maxResults: Option[Int] = None): Future[TransformationResponse] =
-    transformationByName(t.generate, maxResults)
+  // Backward compatible signature
+  def transformation(t: Transformation, maxResults: Option[Int]):Future[TransformationResponse] = transformation(t, None, maxResults)
 
-  def deleteTransformation(transformation: String): Future[TransformationUpdateResponse] = {
+  def transformation(t: Transformation, nextCursor: Option[String] = None, maxResults: Option[Int] = None):Future[TransformationResponse] =
+    transformationByName(t.generate, nextCursor, maxResults)
+      
+  def deleteTransformation(transformation: String):Future[TransformationUpdateResponse] = {
     callApi[TransformationUpdateResponse](Api.DELETE, "transformations" :: transformation :: Nil, Map());
   }
 
@@ -227,9 +227,7 @@ class Api(implicit cloudinary: Cloudinary) {
 
   def updateUploadPreset(uploadPreset: UploadPreset) = {
     callApi[UploadPresetUpdateResponse](Api.PUT, "upload_presets" :: uploadPreset.name :: Nil,
-      uploadPreset.toMap.filterKeys {
-        _ != "name"
-      })
+      uploadPreset.toMap.filterKeys{_ != "name"})
   }
 
   def rootFolders() = callApi[FolderListResponse](Api.GET, "folders" :: Nil, Map())

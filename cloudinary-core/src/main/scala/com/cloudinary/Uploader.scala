@@ -17,6 +17,8 @@ import concurrent.ExecutionContext.Implicits.global
 
 class Uploader(implicit val cloudinary: Cloudinary) {
 
+  private[cloudinary] val httpclient: HttpClient = new HttpClient
+
   def signRequestParams(params: Map[String, Any]) = {
     val paramsAndTimeStamp = params + ("timestamp" -> (System.currentTimeMillis() / 1000L).toLong.toString)
     cloudinary.signRequest(paramsAndTimeStamp)
@@ -62,12 +64,12 @@ class Uploader(implicit val cloudinary: Cloudinary) {
 
   def callApi[T](action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image", signed:Boolean = true)(implicit mf: scala.reflect.Manifest[T]): Future[T] = {
     val request = createRequest(action, optionalParams, file, resourceType, signed)
-    HttpClient.executeAndExtractResponse[T](request)
+    httpclient.executeAndExtractResponse[T](request)
   }
 
   def callRawApi(action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image") = {
     val request = createRequest(action, optionalParams, file, resourceType)
-    HttpClient.executeCloudinaryRequest(request)
+    httpclient.executeCloudinaryRequest(request)
   }
 
   def callTagsApi(tag: String, command: String, publicIds: Iterable[String], `type`: Option[String]) = {

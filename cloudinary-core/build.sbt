@@ -40,6 +40,9 @@ libraryDependencies ++= Seq(
   "org.json4s" %% "json4s-ext" % "3.4.0",
   "org.scalatest" %% "scalatest" % "2.2.1" % "test")
 
+// http://mvnrepository.com/artifact/org.slf4j/slf4j-simple
+libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.21" % "test"
+libraryDependencies += "org.scalamock" %% "scalamock-scalatest-support" % "3.2.2" % "test"
 resolvers ++= Seq("sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots", "sonatype releases" at "https://oss.sonatype.org/content/repositories/releases")
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
