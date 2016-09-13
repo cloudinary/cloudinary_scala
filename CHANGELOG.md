@@ -1,4 +1,10 @@
 
+0.9.11-SNAPSHOT / 2016-09-13
+============================
+
+  * Support UTF-8 values
+    * Fix creation of StringPart - use contentType and Charset. Add tests for Unicode public IDs
+
 0.9.10-SNAPSHOT / 2016-08-30
 ===================
 
