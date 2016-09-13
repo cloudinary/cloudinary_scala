@@ -22,6 +22,27 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
 
   behavior of "An Uploader"
 
+  it should "upload a file" in {
+    val publicId: String = "aåßéƒ"
+    val result = Await result (
+      cloudinary
+      .uploader()
+      .upload(s"$testResourcePath/logo.png", UploadParameters().colors(true).publicId(publicId)), 5 seconds)
+
+    result.public_id should equal(publicId)
+    result.width should equal(241)
+    result.height should equal(51)
+    result.colors should not equal (Map())
+    result.predominant should not equal (Map())
+    result.pages should equal(1)
+
+    val toSign = Map(
+      "public_id" -> result.public_id,
+      "version" -> result.version)
+    val expectedSignature = Cloudinary.apiSignRequest(toSign, cloudinary.apiSecret()).toLowerCase()
+    result.signature should equal(expectedSignature)
+  }
+
   it should "upload a file and get sizes, colors, predominant, public_id, version and signature back" in {
     val result = Await result (
       cloudinary

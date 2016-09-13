@@ -15,6 +15,8 @@ import com.cloudinary.parameters._
 
 import concurrent.ExecutionContext.Implicits.global
 
+import java.nio.charset.StandardCharsets
+
 class Uploader(implicit val cloudinary: Cloudinary) {
 
   private[cloudinary] val httpclient: HttpClient = new HttpClient
@@ -41,10 +43,10 @@ class Uploader(implicit val cloudinary: Cloudinary) {
           case list: Iterable[_] => list.foreach {
             v =>
               apiUrlBuilder.addBodyPart(
-                new StringPart(k + "[]", v.toString, "UTF-8"))
+                new StringPart(k + "[]", v.toString, StringPart.DEFAULT_CONTENT_TYPE, StandardCharsets.UTF_8))
           }
           case null =>
-          case _ => apiUrlBuilder.addBodyPart(new StringPart(k, v.toString, "UTF-8"))
+          case _ => apiUrlBuilder.addBodyPart(new StringPart(k, v.toString, StringPart.DEFAULT_CONTENT_TYPE, StandardCharsets.UTF_8))
         }
     }
 
@@ -53,7 +55,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
       case fp: FilePart => apiUrlBuilder.addBodyPart(fp)
       case f: File => apiUrlBuilder.addBodyPart(new FilePart("file", f))
       case fn: String if !fn.matches(illegalFileName) => apiUrlBuilder.addBodyPart(new FilePart("file", new File(fn)))
-      case body: String => apiUrlBuilder.addBodyPart(new StringPart("file", body, "UTF-8"))
+      case body: String => apiUrlBuilder.addBodyPart(new StringPart("file", body, StringPart.DEFAULT_CONTENT_TYPE, StandardCharsets.UTF_8))
       case body: Array[Byte] => apiUrlBuilder.addBodyPart(new ByteArrayPart("file", body))
       case null =>
       case _ => throw new IOException("Uprecognized file parameter " + file);

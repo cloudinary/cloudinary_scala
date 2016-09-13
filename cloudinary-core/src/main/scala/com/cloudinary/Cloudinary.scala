@@ -58,7 +58,6 @@ object Cloudinary {
     }
 
     val digest = sign(params.mkString("&"), apiSecret)
-    
     bytes2Hex(digest).toLowerCase()
   }
   
