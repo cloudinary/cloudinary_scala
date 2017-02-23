@@ -23,11 +23,11 @@ To use it, add the following dependency to your `build.sbt`:
     
     resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
     
-    libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % "1.0.0"
+    libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % "1.1.0"
 
 If using the [Play 2.4](http://www.playframework.com/) you can add:
 
-    "com.cloudinary" %% "cloudinary-scala-play" % "1.0.0"
+    "com.cloudinary" %% "cloudinary-scala-play" % "1.1.0"
 
 In your controller inject an instance of `CloudinaryResourceBuilder` and make sure to declare an implicit reference to the enclosed `Cloudinary` instance and import `preloadedFormatter`. For example:
 
