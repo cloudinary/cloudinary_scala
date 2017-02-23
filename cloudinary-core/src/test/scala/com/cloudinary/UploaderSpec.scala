@@ -234,7 +234,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   }
 
   it should "allow sending face coordinates" in {
-    val faces1 = List(FaceInfo(121, 31, 110, 151), FaceInfo(120, 30, 109, 150))
+    val faces1 = List(FaceInfo(121, 31, 110, 51), FaceInfo(120, 30, 109, 51))
     val faces2 = List(FaceInfo(122, 32, 111, 152))
     Await.result(for {
       r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().faceCoordinates (faces1))
