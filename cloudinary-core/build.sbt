@@ -35,10 +35,11 @@ pomExtra := {
 }  
   
 libraryDependencies ++= Seq(
-  "com.ning" % "async-http-client" % "1.9.30",
+  "com.ning" % "async-http-client" % "1.9.40",
   "org.json4s" %% "json4s-native" % "3.4.0",
   "org.json4s" %% "json4s-ext" % "3.4.0",
-  "org.scalatest" %% "scalatest" % "2.2.1" % "test")
+  "org.scalatest" %% "scalatest" % "2.2.1" % "test",
+  "org.nanohttpd" % "nanohttpd" % "2.2.0" % "test")
 
 // http://mvnrepository.com/artifact/org.slf4j/slf4j-simple
 libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.21" % "test"
