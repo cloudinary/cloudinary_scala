@@ -1,5 +1,7 @@
 package com.cloudinary
 
+import java.util.concurrent.TimeoutException
+
 import com.cloudinary.Implicits._
 import com.cloudinary.parameters._
 import com.cloudinary.response._
@@ -11,7 +13,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 object UploadPresetTest extends Tag("com.cloudinary.tags.UploadPresetTest")
 object EagerTest extends Tag("com.cloudinary.tags.EagerTest")
@@ -232,7 +234,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   }
 
   it should "allow sending face coordinates" in {
-    val faces1 = List(FaceInfo(121, 31, 110, 151), FaceInfo(120, 30, 109, 150))
+    val faces1 = List(FaceInfo(121, 31, 110, 51), FaceInfo(120, 30, 109, 51))
     val faces2 = List(FaceInfo(122, 32, 111, 152))
     Await.result(for {
       r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().faceCoordinates (faces1))
@@ -322,5 +324,23 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
     } yield {
       response.eager.length should equal(2)
     }, 10.seconds)
+  }
+
+  it should "support a timeout argument" in {
+    val uploadParams = UploadParameters()
+    val  handler = ServerMock.fixedHandler(() => {
+      Thread.sleep(3000)
+      ServerMock.simpleResponse("ok")
+    })
+    new ServerMock(handler, () => {
+      val startTime = System.currentTimeMillis()
+      val mockCld = cloudinary.withConfig(Map("upload_prefix" -> s"http://localhost:${ServerMock.TEST_SERVER_PORT}"))
+      val f = mockCld.uploader().upload("http://cloudinary.com/images/logo.png", uploadParams, requestTimeout = Some(1000))
+      Await.ready(f, 10.seconds).value should matchPattern {
+        case Some(Failure(t:TimeoutException)) =>
+      }
+      val duration = System.currentTimeMillis() - startTime
+      duration should be < 2000L
+    }).test
   }
 }
