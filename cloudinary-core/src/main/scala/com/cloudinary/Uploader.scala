@@ -22,7 +22,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     cloudinary.signRequest(paramsAndTimeStamp)
   }
 
-  def createRequest(action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image", signed: Boolean = true, requestTimeoutMS: Option[Int] = None) = {
+  def createRequest(action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image", signed: Boolean = true, requestTimeout: Option[Int] = None) = {
     val params = Util.definedMap(optionalParams)
 
     val processedParams = if (signed) signRequestParams(params) else params
@@ -31,7 +31,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
 
     val apiUrlBuilder = new RequestBuilder("POST")
     apiUrlBuilder.setUrl(apiUrl)
-    requestTimeoutMS.map(timeout => apiUrlBuilder.setRequestTimeout(timeout)) //in millis
+    requestTimeout.map(timeout => apiUrlBuilder.setRequestTimeout(timeout)) //in milliseconds
 
     processedParams foreach {
       param =>
@@ -55,15 +55,15 @@ class Uploader(implicit val cloudinary: Cloudinary) {
       case body: String => apiUrlBuilder.addBodyPart(new StringPart("file", body, StringPart.DEFAULT_CONTENT_TYPE, StandardCharsets.UTF_8))
       case body: Array[Byte] => apiUrlBuilder.addBodyPart(new ByteArrayPart("file", body))
       case null =>
-      case _ => throw new IOException("Uprecognized file parameter " + file);
+      case _ => throw new IOException("Unrecognized file parameter " + file);
     }
 
     apiUrlBuilder.build()
   }
 
-  def callApi[T](action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image", signed: Boolean = true, requestTimeoutMS: Option[Int] = None)
+  def callApi[T](action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image", signed: Boolean = true, requestTimeout: Option[Int] = None)
                 (implicit mf: scala.reflect.Manifest[T]): Future[T] = {
-    val request = createRequest(action, optionalParams, file, resourceType, signed, requestTimeoutMS)
+    val request = createRequest(action, optionalParams, file, resourceType, signed, requestTimeout)
     httpclient.executeAndExtractResponse[T](request)
   }
 
@@ -81,12 +81,12 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     callApi[TagResponse]("tags", params, null);
   }
 
-  def unsignedUpload(file: AnyRef, uploadPreset: String, params: UploadParameters = UploadParameters(), resourceType: String = "image", requestTimeoutMS: Option[Int] = None) = {
-    upload(file, params.uploadPreset(uploadPreset).copy(signed = false), resourceType, requestTimeoutMS)
+  def unsignedUpload(file: AnyRef, uploadPreset: String, params: UploadParameters = UploadParameters(), resourceType: String = "image", requestTimeout: Option[Int] = None) = {
+    upload(file, params.uploadPreset(uploadPreset).copy(signed = false), resourceType, requestTimeout)
   }
 
-  def upload(file: AnyRef, params: UploadParameters = UploadParameters(), resourceType: String = "image", requestTimeoutMS: Option[Int] = None) = {
-    callApi[UploadResponse]("upload", params.toMap, file, resourceType, params.signed, requestTimeoutMS)
+  def upload(file: AnyRef, params: UploadParameters = UploadParameters(), resourceType: String = "image", requestTimeout: Option[Int] = None) = {
+    callApi[UploadResponse]("upload", params.toMap, file, resourceType, params.signed, requestTimeout)
   }
 
   def uploadLargeRaw(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), bufferSize: Int = 20000000) = {

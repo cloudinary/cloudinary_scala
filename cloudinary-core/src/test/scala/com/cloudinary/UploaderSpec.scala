@@ -335,7 +335,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
     new ServerMock(handler, () => {
       val startTime = System.currentTimeMillis()
       val mockCld = cloudinary.withConfig(Map("upload_prefix" -> s"http://localhost:${ServerMock.TEST_SERVER_PORT}"))
-      val f = mockCld.uploader().upload("http://cloudinary.com/images/logo.png", uploadParams, requestTimeoutMS = Some(1000))
+      val f = mockCld.uploader().upload("http://cloudinary.com/images/logo.png", uploadParams, requestTimeout = Some(1000))
       Await.ready(f, 10.seconds).value should matchPattern {
         case Some(Failure(t:TimeoutException)) =>
       }
