@@ -55,6 +55,7 @@ object HttpClient {
 
     val asyncHttpConfig = new AsyncHttpClientConfig.Builder()
     asyncHttpConfig.setUserAgent(Cloudinary.USER_AGENT)
+    asyncHttpConfig.setReadTimeout(-1)
     new AsyncHttpClient(asyncHttpConfig.build())
   }
 
