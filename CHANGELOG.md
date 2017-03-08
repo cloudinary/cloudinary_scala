@@ -1,3 +1,9 @@
+
+1.1.2 / 2017-03-07
+==================
+
+  * Set read timeout to -1 to disable read timeout completely
+
 1.1.1 / 2017-02-23
 ==================
   * Fix version number
