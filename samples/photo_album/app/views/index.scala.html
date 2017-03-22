@@ -1,4 +1,4 @@
-@(photos: Seq[Photo])(implicit cld:com.cloudinary.Cloudinary)
+@(photos: Seq[Photo])(implicit cld:com.cloudinary.Cloudinary, webJarAssets: WebJarAssets)
 
 @import cloudinary.views.html.helper._
 @import cloudinary.model._
@@ -81,10 +81,5 @@
   }
 </div>
 
-<script type='text/javascript'>
-  $('.toggle_info').click(function () {
-    $(this).closest('.photo').toggleClass('show_more_info');
-    return false;
-  });
-</script>
+<script src="@routes.Assets.at("javascripts/toggleInfo.js")" type="text/javascript"></script>
 }

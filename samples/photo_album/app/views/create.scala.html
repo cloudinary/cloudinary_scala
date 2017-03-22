@@ -1,4 +1,4 @@
-@(photo: Photo, maybeUpload:Option[com.cloudinary.response.UploadResponse] = None)(implicit cld:com.cloudinary.Cloudinary)
+@(photo: Photo, maybeUpload:Option[com.cloudinary.response.UploadResponse] = None)(implicit cld:com.cloudinary.Cloudinary, webJarAssets: WebJarAssets)
 @main("Image Created") {
 <h1>Your photo was uploaded sucessfully!</h1>
 

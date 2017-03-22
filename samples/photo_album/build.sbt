@@ -6,8 +6,12 @@ scalaVersion := Common.scalaVersion
 
 libraryDependencies ++= Seq(
   "com.h2database" % "h2" % "1.4.188",
-  "com.typesafe.play" %% "play-slick" % "1.0.1",
-  "com.typesafe.play" %% "play-slick-evolutions" % "1.0.1",
+  "com.typesafe.play" %% "play-slick" % "3.0.0-M3",
+  "com.typesafe.play" %% "play-slick-evolutions" % "3.0.0-M3",
+  "org.webjars" %% "webjars-play" % "2.6.0-M1",
+  "org.webjars.npm" % "jquery" % "2.2.4",
+  "org.webjars.npm" % "blueimp-file-upload" % "9.12.1",
+  "org.webjars.npm" % "cloudinary-jquery-file-upload" % "2.2.1",
   evolutions
 )     
 

@@ -1,0 +1,7 @@
+@(implicit cld:com.cloudinary.Cloudinary)
+
+@List("api_key", "cloud_name", "cdn_subdomain", "private_cdn", "secure_distribution").map{k =>
+  @if(cld.getStringConfig(k).isDefined){
+      <meta name="cloudinary_@k" content="@{cld.getStringConfig(k).get}">
+  }
+}

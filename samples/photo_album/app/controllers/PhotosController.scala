@@ -2,34 +2,27 @@ package controllers
 
 import javax.inject._
 
-import scala.concurrent._
-import ExecutionContext.Implicits.global
-
-import org.joda.time.DateTime
-
-import play.api._
-import play.api.mvc.Controller
-import play.api.mvc.Action
-import play.api.i18n.I18nSupport
-import play.api.i18n.MessagesApi
-
-import play.api.data._
-import play.api.data.Forms._
-
 import cloudinary.model.{CloudinaryResource, CloudinaryResourceBuilder}
-
 import com.cloudinary.parameters.UploadParameters
-import com.cloudinary.Implicits._
-
 import dao._
 import models._
+import org.joda.time.DateTime
+import play.api.data.Forms._
+import play.api.data._
+import play.api.i18n.I18nSupport
+import play.api.mvc._
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
 
 class PhotosController @Inject() (
   photoDao:PhotoDAO, 
-  cloudinaryResourceBuilder: CloudinaryResourceBuilder, 
-  val messagesApi: MessagesApi) extends Controller with I18nSupport {
+  cloudinaryResourceBuilder: CloudinaryResourceBuilder,
+  cc: ControllerComponents,
+  webJarAssets:WebJarAssets) extends AbstractController(cc) with I18nSupport {
   
   implicit val cld:com.cloudinary.Cloudinary = cloudinaryResourceBuilder.cld
+  implicit val webJarAssetsImpl:WebJarAssets = webJarAssets
   import cloudinaryResourceBuilder.preloadedFormatter
 
   val photoForm = Form(
@@ -46,19 +39,19 @@ class PhotosController @Inject() (
 
   def photo(id: Long) =  photoDao.find(id)
 
-  def index = Action.async { implicit request =>
+  def index = Action.async(parse.anyContent){ implicit request:RequestHeader =>
     photoDao.all().map{photos => Ok(views.html.index(photos))}
   }
 
-  def fresh = Action {
+  def fresh = Action(parse.anyContent){ implicit request:RequestHeader =>
     Ok(views.html.fresh(photoForm))
   }
 
-  def freshDirect = Action {
+  def freshDirect = Action(parse.anyContent){ implicit request:RequestHeader =>
     Ok(views.html.freshDirect(directUploadForm))
   }
 
-  def freshUnsignedDirect = Action {
+  def freshUnsignedDirect = Action(parse.anyContent){ implicit request:RequestHeader =>
     // Preset creation does not really belong here - it's just here for the sample to work. 
     // The preset should be created offline
 
@@ -71,34 +64,28 @@ class PhotosController @Inject() (
     Ok(views.html.freshUnsignedDirect(directUploadForm, presetName))
   }
 
-  def create = Action.async { implicit request =>
-    photoForm.bindFromRequest.fold(
-      formWithErrors => Future { BadRequest(views.html.fresh(formWithErrors)) },
-      photoDetails => {
-        val body = request.body.asMultipartFormData
-        val resourceFile = body.get.file("photo")
-        if (resourceFile.isEmpty) {
-          val formWithErrors = photoForm.withError(FormError("photo", "Must supply photo"))
-          Future { BadRequest(views.html.fresh(formWithErrors)) }
-        } else {
-          cloudinaryResourceBuilder.upload(resourceFile.get.ref.file, UploadParameters().faces(true).colors(true).imageMetadata(true).exif(true)).flatMap {
-            cr =>
-              val photo = Photo(0, photoDetails.title, cr, cr.data.get.bytes.toInt, DateTime.now)
-              photoDao.insert(photo).map{
-                _ => Ok(views.html.create(photo, cr.data))
-              }
+  def create = Action.async(parse.multipartFormData) { implicit request =>
+    implicit val messages = cc.messagesApi.preferred(request)
+    val photoDetails = request.body
+    request.body.file("photo").map { photo =>
+      cloudinaryResourceBuilder.upload(photo.ref.path.toFile, UploadParameters().faces(true).colors(true).imageMetadata(true).exif(true)).flatMap {
+        cr =>
+          val photo = Photo(0, request.body.asFormUrlEncoded("title").headOption.getOrElse("Empty Title"), cr, cr.data.get.bytes.toInt, DateTime.now)
+          photoDao.insert(photo).map{
+            _ => Ok(views.html.create(photo, cr.data))
           }
-        }
-      })
+      }
+    }.getOrElse {
+      Future{Redirect(routes.PhotosController.index).flashing(
+                      "error" -> "Missing file")}
+    }
   }
 
-  def createDirect = Action.async { implicit request =>
-    directUploadForm.bindFromRequest.fold(
-      formWithErrors => Future {BadRequest(views.html.freshDirect(formWithErrors))},
-      photo => {
-        photoDao.insert(photo).map{
-          _ => Ok(views.html.create(photo))
-        }
-      })
+  def createDirect = Action.async(parse.form(directUploadForm)) { implicit request =>
+    implicit val messages = cc.messagesApi.preferred(request)
+    val photo = request.body
+    photoDao.insert(photo).map {
+      _ => Ok(views.html.create(photo))
+    }
   }
 }

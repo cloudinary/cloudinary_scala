@@ -1,14 +1,13 @@
-@(uploadForm:Form[PhotoDetails])(implicit messages: Messages, cld:com.cloudinary.Cloudinary)
+@(uploadForm:Form[PhotoDetails])(implicit messages: Messages, cld:com.cloudinary.Cloudinary, webJarAssets: WebJarAssets, request: play.api.mvc.RequestHeader)
 
 @main("New Photo") {
 <div id='backend_upload'>
   <h1>New Photo</h1>
   <h2>Image file is uploaded through the server</h2>
   @helper.form(action = routes.PhotosController.create(), 'enctype -> "multipart/form-data") {
-
     @helper.inputText(uploadForm("title"))
     @helper.inputFile(uploadForm("photo"))
-
+    @helper.CSRF.formField
     <p>
         <input type="submit">
     </p>

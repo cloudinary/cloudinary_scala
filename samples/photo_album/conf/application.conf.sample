@@ -51,3 +51,5 @@ cloudinary = {
   # or sepcify a CLOUDINARY_URL in env or explicitly
   # url = ${?CLOUDINARY_URL}
 }
+
+play.filters.headers.contentSecurityPolicy = "img-src 'self' http://res.cloudinary.com"
