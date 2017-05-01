@@ -1,4 +1,17 @@
 
+1.2.0 / 2017-05-01
+==================
+
+New functionality and features
+------------------------------
+
+  * Add Search API
+
+Other Changes
+-------------
+
+  * Merge pull request #19 from janghwan/master
+
 1.1.2 / 2017-03-07
 ==================
 
