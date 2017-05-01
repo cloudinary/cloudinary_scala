@@ -141,6 +141,8 @@ class Cloudinary(config: Map[String, Any]) {
 
   def api() = new Api()
 
+  def search() = new Search()
+
   def cloudinaryApiUrlPrefix(): String = {
     val cloudinary = Cloudinary.asString(config.get("upload_prefix"),
       Some("https://api.cloudinary.com")).get

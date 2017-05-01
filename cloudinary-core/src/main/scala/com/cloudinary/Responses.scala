@@ -110,6 +110,8 @@ case class TagsResponse(tags: List[String], next_cursor: Option[String]) extends
 case class FolderInfo(name:String, path:String)
 case class FolderListResponse(folders: List[FolderInfo])
 
+case class SearchResponse(total_count:Int, time:Int, resources: List[ResourceResponse]  )
+
 //Shared
 case class ResourceResponse(public_id: String, url: String, secure_url: String, bytes: Int,
   width: Int, height: Int, format: String, resource_type: String, `type`: String,

@@ -32,23 +32,24 @@ class Api(implicit cloudinary: Cloudinary) {
     val apiUrl: String =
       (cloudinary.cloudinaryApiUrlPrefix() :: uri.toList).filterNot(_.isEmpty()).mkString("/")
 
-    val apiUrlBuilder = new RequestBuilder(method.method).setUrl(apiUrl)
+    val builder = new RequestBuilder(method.method).setUrl(apiUrl)
     for (param <- Util.definedMap(params)) {
       val (k, v) = param
       if (v.isInstanceOf[Iterable[_]]) {
         for (sv <- v.asInstanceOf[Iterable[String]]) {
           method match {
-            case Api.GET => apiUrlBuilder.addQueryParam(k + "[]", sv)
-            case _ => apiUrlBuilder.addFormParam(k + "[]", sv)
+            case Api.GET => builder.addQueryParam(k + "[]", sv)
+            case _ => builder.addFormParam(k + "[]", sv)
           }
         }
       } else {
         method match {
-          case Api.GET => apiUrlBuilder.addQueryParam(k, v.toString)
-          case _ => apiUrlBuilder.addFormParam(k, v.toString)
+          case Api.GET => builder.addQueryParam(k, v.toString)
+          case _ => builder.addFormParam(k, v.toString)
         }
       }
     }
+
 
     val realm = new Realm.RealmBuilder()
       .setPrincipal(cloudinary.apiKey())
@@ -57,7 +58,37 @@ class Api(implicit cloudinary: Cloudinary) {
       .setScheme(Realm.AuthScheme.BASIC)
       .build()
 
-    apiUrlBuilder.setRealm(realm).build()
+    builder.setRealm(realm).build()
+  }
+
+  def createRequest(
+    method: Api.HttpMethod,
+    uri: Iterable[String],
+    params: String) = {
+    val apiUrl: String =
+      (cloudinary.cloudinaryApiUrlPrefix() :: uri.toList).filterNot(_.isEmpty()).mkString("/")
+
+    val builder = new RequestBuilder(method.method).setUrl(apiUrl)
+    builder.setHeader("Content-Type", "application/json")
+    builder.setBody(params)
+
+
+    val realm = new Realm.RealmBuilder()
+      .setPrincipal(cloudinary.apiKey())
+      .setPassword(cloudinary.apiSecret())
+      .setUsePreemptiveAuth(true)
+      .setScheme(Realm.AuthScheme.BASIC)
+      .build()
+
+    builder.setRealm(realm).build()
+  }
+
+  def callJsonApi[T](
+    method: Api.HttpMethod,
+    uri: Iterable[String],
+    params: String)(implicit mf: scala.reflect.Manifest[T]): Future[T] = {
+    val request = createRequest(method, uri, params)
+    httpclient.executeAndExtractResponse[T](request)
   }
 
   def callApi[T](
