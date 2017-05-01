@@ -1,12 +1,12 @@
 package com.cloudinary.response
 
+import java.text.SimpleDateFormat
 import java.util.Date
-import org.json4s._
-import org.json4s.DefaultFormats
-import org.json4s.ext.EnumNameSerializer
+
 import com.cloudinary.Transformation
 import com.cloudinary.parameters._
-import java.text.SimpleDateFormat
+import org.json4s.{DefaultFormats, _}
+import org.json4s.ext.EnumNameSerializer
 
 case class FaceInfo(x: Int, y: Int, width: Int, height: Int)
 case class CustomCoordinate(x: Int, y: Int, width: Int, height: Int)
@@ -27,6 +27,16 @@ object ModerationStatus extends Enumeration {
   val pending, rejected, approved, overridden = Value
 }
 case class ModerationItem(status: ModerationStatus.Value, kind: String, response: Option[String], updated_at: Option[Date])
+
+object Status extends Enumeration {
+  type Status = Value
+  val active, pending, deleted = Value
+}
+
+object AccessMode extends Enumeration {
+  type AccessMode = Value
+  val public, authenticated = Value
+}
 
 //Upload API Responses
 case class UploadResponse(public_id: String, url: String, secure_url: String, signature: String, bytes: Long,
@@ -153,6 +163,17 @@ trait TimestampedResponse extends RawResponse {
       case _ => null
     }
   }
+
+  lazy val uploadedAt = {
+    (raw \ "uploaded_at") match {
+      case JString(s) => try {
+        dateFormatter.parse(s)
+      } catch {
+        case _: Throwable => null
+      }
+      case _ => null
+    }
+  }
 }
 
 trait AdvancedResponse extends RawResponse {
@@ -212,4 +233,99 @@ trait AdvancedResponse extends RawResponse {
   }
 
   lazy val pages:Int = (raw \ "pages").extractOpt[Int].getOrElse(1)
+}
+
+class ImageAnalysis(raw: JsonAST.JValue) {
+  implicit lazy val formats = DefaultFormats
+
+  lazy val faceCount: Int = (raw \ "face_count").extractOpt[Int].getOrElse(0)
+
+  lazy val faces: List[FaceInfo] = for {
+    JArray(l) <- raw \ "faces"
+    JArray(JInt(x) :: JInt(y) :: JInt(width) :: JInt(height) :: Nil) <- l
+  } yield FaceInfo(x.toInt, y.toInt, width.toInt, height.toInt)
+
+  lazy val grayscale: Boolean = (raw \ "grayscale").extractOpt[Boolean].getOrElse(false)
+
+  lazy val transparent: Boolean = (raw \ "transparent").extractOpt[Boolean].getOrElse(false)
+
+  lazy val etag: Option[String] = (raw \ "etag").extractOpt[String]
+
+  lazy val illustrationScore: Option[Float] = (raw \ "illustration_score").extractOpt[Float]
+
+  lazy val colors: List[ColorInfo] = for {
+    JArray(l) <- raw \ "colors"
+    JArray(JString(color) :: JDouble(rank) :: Nil) <- l
+  } yield ColorInfo(color, rank)
+}
+
+object SearchResourceResponse {
+  implicit lazy val formats = DefaultFormats +
+    new EnumNameSerializer(Status) +
+    new EnumNameSerializer(ModerationStatus) +
+    new EnumNameSerializer(AccessMode)
+}
+
+case class SearchResourceResponse(override val raw: JsonAST.JValue) extends VersionedResponse with TimestampedResponse {
+
+  import SearchResourceResponse.formats
+
+  lazy val publicId: String = (raw \ "public_id").extract[String]
+
+  lazy val folder: String = (raw \ "folder").extract[String]
+
+  lazy val filename: String = (raw \ "filename").extract[String]
+
+  lazy val format: String = (raw \ "format").extract[String]
+
+  lazy val resourceType: String = (raw \ "resource_type").extract[String]
+
+  lazy val `type`: String = (raw \ "type").extract[String]
+
+  lazy val bytes: Long = (raw \ "bytes").extract[Long]
+
+  lazy val backupBytes: Long = (raw \ "backup_bytes").extract[Long]
+
+  lazy val width: Int = (raw \ "width").extractOpt[Int].getOrElse(0)
+
+  lazy val height: Int = (raw \ "height").extractOpt[Int].getOrElse(0)
+
+  lazy val duration: Option[Float] = (raw \ "duration").extractOpt[Float]
+
+  lazy val pages: Int = (raw \ "pages").extractOpt[Int].getOrElse(1)
+
+  lazy val tags: Set[String] = (raw \ "tags").extractOpt[Array[String]].map(_.toSet).getOrElse(Set.empty)
+
+  lazy val context: Map[String, String] = (raw \ "context").extractOpt[Map[String, String]].getOrElse(Map.empty)
+
+  lazy val url: String = (raw \ "url").extract[String]
+
+  lazy val secureUrl: String = (raw \ "secure_url").extract[String]
+
+  lazy val status: Status.Value = (raw \ "status").extract[Status.Value]
+
+  lazy val moderationStatus: ModerationStatus.Value = (raw \ "moderation_status").extract[ModerationStatus.Value]
+
+  lazy val accessMode: AccessMode.Value = (raw \ "access_mode").extract[AccessMode.Value]
+
+  lazy val imageMetadata: Map[String, String] = (raw \ "image_metadata").extractOpt[Map[String, String]].getOrElse(Map.empty)
+
+  lazy val imageAnalysis: Option[ImageAnalysis] = raw \ "image_analysis" match {
+    case v@JObject(_) => Some(new ImageAnalysis(v))
+    case _ => None
+  }
+}
+
+class SearchResponse extends RawResponse {
+  implicit lazy val formats = DefaultFormats
+
+  lazy val totalCount: Int = (raw \ "total_count").extract[Int]
+
+  lazy val time: Long = (raw \ "time").extract[Long]
+
+  lazy val aggregations: Option[Map[String, Long]] = (raw \ "aggregations").extractOpt[Map[String, Long]]
+
+  lazy val nextCursor: Option[String] = (raw \ "next_cursor").extractOpt[String]
+
+  lazy val resources: Iterable[SearchResourceResponse] = (raw \ "resources").extract[List[JsonAST.JValue]].map(SearchResourceResponse.apply)
 }

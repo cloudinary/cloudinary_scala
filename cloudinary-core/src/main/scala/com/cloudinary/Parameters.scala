@@ -1,10 +1,8 @@
 package com.cloudinary.parameters
 
-import com.cloudinary.Transformation
-import com.cloudinary.EagerTransformation
-import com.cloudinary.response.FaceInfo
-import com.cloudinary.response.CustomCoordinate
-import com.cloudinary.response.ModerationStatus
+import com.cloudinary.Api.{ASCENDING, DESCENDING, ListDirection}
+import com.cloudinary.response.{CustomCoordinate, FaceInfo, ModerationStatus}
+import com.cloudinary.{EagerTransformation, Transformation}
 
 private [cloudinary] case class FacesInfo(faces:Iterable[FaceInfo])
 private [cloudinary] case class CustomCoordinates(coordinates:Iterable[CustomCoordinate])
@@ -137,4 +135,37 @@ case class TextParameters(text: String,
     "background" -> background,
     "opacity" -> opacity,
     "text_decoration" -> textDecoration)
+}
+
+case class SearchParameters(
+  expression: Option[String] = None,
+  maxResults: Option[Int] = None,
+  nextCursor: Option[String] = None,
+  aggregate: List[String] = List.empty,
+  sortBy: List[Tuple2[String, ListDirection]] = List.empty,
+  withField: List[String] = List.empty)
+
+object SearchParameters {
+  import org.json4s.JsonAST.JString
+  import org.json4s.{CustomSerializer, DefaultFormats, FieldSerializer}
+  import FieldSerializer._
+
+  private class ListDirectionSerializer extends CustomSerializer[ListDirection](format => ( {
+    case JString("asc") => ASCENDING
+    case JString("desc") => DESCENDING
+  }, {
+    case v: ListDirection => JString(v.dir)
+  }
+  ))
+
+  private def skipEmptyList: PartialFunction[(String, Any), Option[(String, Any)]] = {
+    case (_, Nil) => None
+  }
+
+  implicit val formats = DefaultFormats + new ListDirectionSerializer + FieldSerializer[SearchParameters](
+    skipEmptyList orElse
+    renameTo("maxResults", "max_results") orElse
+    renameTo("nextCursor", "next_cursor") orElse
+    renameTo("withField", "with_field") orElse
+    renameTo("sortBy", "sort_by"))
 }

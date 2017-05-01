@@ -8,6 +8,9 @@ import com.ning.http.client.RequestBuilder
 import response._
 import parameters.UpdateParameters
 import java.text.SimpleDateFormat
+import org.json4s._
+import org.json4s.native.Serialization.write
+
 
 object Api {
   abstract class HttpMethod(val method: String)
@@ -28,7 +31,9 @@ class Api(implicit cloudinary: Cloudinary) {
   def createRequest(
     method: Api.HttpMethod,
     uri: Iterable[String],
-    params: Map[String, Any]) = {
+    params: Map[String, Any],
+    contentType: Option[String] = None,
+    body: Option[String] = None) = {
     val apiUrl: String =
       (cloudinary.cloudinaryApiUrlPrefix() :: uri.toList).filterNot(_.isEmpty()).mkString("/")
 
@@ -57,7 +62,10 @@ class Api(implicit cloudinary: Cloudinary) {
       .setScheme(Realm.AuthScheme.BASIC)
       .build()
 
-    apiUrlBuilder.setRealm(realm).build()
+    apiUrlBuilder.setRealm(realm)
+    contentType.foreach(apiUrlBuilder.setHeader("Content-Type", _))
+    body.foreach(apiUrlBuilder.setBody)
+    apiUrlBuilder.build()
   }
 
   def callApi[T](
@@ -65,6 +73,15 @@ class Api(implicit cloudinary: Cloudinary) {
     uri: Iterable[String],
     params: Map[String, Any])(implicit mf: scala.reflect.Manifest[T]): Future[T] = {
     val request = createRequest(method, uri, params)
+    httpclient.executeAndExtractResponse[T](request)
+  }
+
+  def callJsonApi[A <: AnyRef, T](
+    method: Api.HttpMethod,
+    uri: Iterable[String],
+    params: A)(implicit mf: scala.reflect.Manifest[T], formats: Formats): Future[T] = {
+    val json = write[A](params)
+    val request = createRequest(method, uri, Map.empty, contentType = Some("application/json"), body = Some(json))
     httpclient.executeAndExtractResponse[T](request)
   }
 
