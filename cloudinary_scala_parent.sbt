@@ -3,6 +3,7 @@ version := Common.version
 scalaVersion := Common.scalaVersion
 
 crossScalaVersions := Common.scalaVersions
+useGpg := true
 
 lazy val cloudinaryCoreScala =  project.in( file("cloudinary-core") )
 
