@@ -136,10 +136,10 @@ class Api(implicit cloudinary: Cloudinary) {
       Map("next_cursor" -> nextCursor, "max_results" -> maxResults, "tags" -> tags, "context" -> context, "moderations" -> moderations, "direction" -> direction.map(_.dir)))
   }
 
-  def resourcesByIds(publicIds: List[String], tags: Boolean = false, context: Boolean = false, moderations: Boolean = false,
+  def resourcesByIds(publicIds: Iterable[String], tags: Boolean = false, context: Boolean = false, moderations: Boolean = false,
                      resourceType: String = "image", `type`: String = "upload") =
     callApi[ResourcesResponse](Api.GET, "resources" :: resourceType :: `type` :: Nil,
-      Map("public_ids" -> publicIds.mkString(","), "tags" -> tags, "context" -> context, "moderations" -> moderations))
+      Map("public_ids" -> publicIds, "tags" -> tags, "context" -> context, "moderations" -> moderations))
 
   def resourcesByModeration(status: ModerationStatus.Value, kind: String = "manual",
                             tags: Boolean = false, context: Boolean = false, moderations: Boolean = false,
