@@ -11,7 +11,10 @@ import org.scalatest.{BeforeAndAfterEach, FlatSpec}
 import scala.collection.JavaConverters._
 
 class MockableFlatSpec extends FlatSpec with MockFactory with BeforeAndAfterEach{
-
+  protected val prefix = "cloudinary_scala"
+  protected val suffix = sys.env.getOrElse("TRAVIS_JOB_ID", (10000 + scala.util.Random.nextInt(89999)).toString)
+  protected val testId = s"${prefix}_$suffix"
+  protected val testTag = s"${testId}_tag"
 
   lazy val cloudinary = {
     val c = new Cloudinary()
@@ -82,7 +85,7 @@ class MockableFlatSpec extends FlatSpec with MockFactory with BeforeAndAfterEach
   override def afterEach() {
     // reset the http client in case a mock has been used
     HttpClient.clientHolder.set(None)
-    super.beforeEach()
+    super.afterEach()
   }
 
 }

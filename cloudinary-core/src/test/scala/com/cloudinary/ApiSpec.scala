@@ -20,50 +20,44 @@ import collection.JavaConverters._
 
 class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll{
 
+  private lazy val api = cloudinary.api()
+  private lazy val uploader = cloudinary.uploader()
 
-  lazy val api = cloudinary.api()
+  private val testResourcePath = "cloudinary-core/src/test/resources"
+  private val apiTag = testTag + "_api"
 
-  val testResourcePath = "cloudinary-core/src/test/resources"
-  val prefix = "apiTest"
-  val suffix = scala.util.Random.nextInt(9999).toString
+  private val apiTest1 = prefix + "1" +suffix
 
-  val apiTest = prefix + suffix
+  private val apiTest2 = prefix + "2" +suffix
+  private val apiTest3 = prefix + "3" +suffix
+  private val apiTest4 = prefix + "4" +suffix
+  private val apiTest5 = prefix + "5" +suffix
 
-  val apiTest1 = prefix + "1" +suffix
+  private val apiTestUploadPreset = prefix + "UploadPreset" + suffix
+  private val apiTestUploadPreset2 = prefix + "UploadPreset2" + suffix
+  private val apiTestUploadPreset3 = prefix + "UploadPreset3" + suffix
+  private val apiTestUploadPreset4 = prefix + "UploadPreset4" + suffix
 
-  val apiTest2 = prefix + "2" +suffix
-  val apiTest3 = prefix + "3" +suffix
-  val apiTest4 = prefix + "4" +suffix
-  val apiTest5 = prefix + "5" +suffix
-
-  val apiTestTag = apiTest + "Tag" + suffix
-
-  val apiTestUploadPreset = prefix + "UploadPreset" + suffix
-  val apiTestUploadPreset2 = prefix + "UploadPreset2" + suffix
-  val apiTestUploadPreset3 = prefix + "UploadPreset3" + suffix
-  val apiTestUploadPreset4 = prefix + "UploadPreset4" + suffix
-
-  val apiTestByPrefix = prefix + "ByPrefix" + suffix
-
-  val apiTestTransformation = apiTest + "Transformation" + suffix
-  val apiTestTransformation2 = apiTest + "Transformation2" + suffix
-  val apiTestTransformation3 = apiTest + "Transformation3" + suffix
+  private val apiTestTransformation = testId + "Transformation" + suffix
+  private val apiTestTransformation2 = testId + "Transformation2" + suffix
+  private val apiTestTransformation3 = testId + "Transformation3" + suffix
 
   override def beforeAll(): Unit = {
-    val options = UploadParameters().publicId(apiTest).
-      tags(Set(apiTestTag)).
+    super.beforeAll()
+    val options = UploadParameters().publicId(testId).
+      tags(Set(prefix, testTag, apiTag)).
       context(Map("key" -> "value")).
       customCoordinates(List(CustomCoordinate(10,11,12,13))).
       eager(List(Transformation().w_(100).c_("scale")))
     Await.result(for {
-    r5 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", options).recover { case _ => "r5 failed" }
-    r6 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", options.publicId(apiTest1)).recover { case _ => "r6 failed" }
+    r5 <- uploader.upload(s"$testResourcePath/logo.png", options).recover { case _ => "r5 failed" }
+    r6 <- uploader.upload(s"$testResourcePath/logo.png", options.publicId(apiTest1)).recover { case _ => "r6 failed" }
     } yield (r5, r6), 20 seconds)
   }
   override def afterAll() {
-
+    super.afterAll()
     Await.result(for {
-      r1 <- api.deleteResources(List(apiTest, apiTest1, apiTest2, apiTest3, apiTest4, apiTest5, apiTestByPrefix)).recover { case _ => "r1 failed" }
+      r1 <- api.deleteResourcesByTag(apiTag).recover { case _ => "r1 failed" }
       r2 <- api.deleteTransformation(apiTestTransformation).recover { case _ => "r2 failed" }
       r3 <- api.deleteTransformation(apiTestTransformation2).recover { case _ => "r3 failed" }
       r4 <- api.deleteTransformation(apiTestTransformation3).recover { case _ => "r4 failed" }
@@ -81,7 +75,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing resources" in {
-    val v = Await.result(api.resources(maxResults = 500).map(response => response.resources.find(r => r.public_id == apiTest && r.`type` == "upload")), 5 seconds)
+    val v = Await.result(api.resources(maxResults = 500).map(response => response.resources.find(r => r.public_id == testId && r.`type` == "upload")), 5 seconds)
     v.isDefined should be(true)
   }
 
@@ -95,42 +89,42 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing resources by type" in {
-    Await.result(api.resources(`type` = "upload", tags = true, context = true).map {
+    Await.result(api.resources(`type` = "upload", prefix = prefix, tags = true, context = true, maxResults = 500).map {
       response =>
-        response.resources.map(_.public_id).toSet should contain(apiTest)
-        response.resources.map(_.tags).toSet should contain(List(apiTestTag))
+        response.resources.map(_.public_id).toSet should contain(testId)
+        response.resources.map(_.tags).toSet should contain(List(prefix, testTag, apiTag))
         response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 
   it should "allow listing resources by prefix" in {
-    Await.result(api.resources(`type` = "upload", prefix = apiTest, tags = true, context = true).map {
+    Await.result(api.resources(`type` = "upload", prefix = testId, tags = true, context = true).map {
       response =>
-        response.resources.map(_.public_id).foreach(_ should startWith(apiTest))
-        response.resources.map(_.tags).toSet should contain(List(apiTestTag))
+        response.resources.map(_.public_id).foreach(_ should startWith(testId))
+        response.resources.map(_.tags).toSet should contain(List(prefix, testTag, apiTag))
         response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 
   it should "allow specifying direction when listing resources" in {
-    Await.result(api.resourcesByTag(apiTestTag, direction = Api.ASCENDING), 5 seconds).resources.reverse should equal(
-      Await.result(api.resourcesByTag(apiTestTag, direction = Api.DESCENDING), 5 seconds).resources)
+    Await.result(api.resourcesByTag(testTag, direction = Api.ASCENDING), 5 seconds).resources.reverse should equal(
+      Await.result(api.resourcesByTag(testTag, direction = Api.DESCENDING), 5 seconds).resources)
   }
 
   it should "allow listing resources by tag" in {
-    Await.result(api.resourcesByTag(apiTestTag, tags = true, context = true).map {
+    Await.result(api.resourcesByTag(testTag, tags = true, context = true).map {
       response =>
-        response.resources.map(_.public_id).toSet should equal(Set(apiTest, apiTest1))
-        response.resources.map(_.tags).toSet should contain(List(apiTestTag))
+        response.resources.map(_.public_id).toSet should equal(Set(testId, apiTest1))
+        response.resources.map(_.tags).toSet should contain(List(prefix, testTag, apiTag))
         response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 
   it should "allow listing resources by public id" in {
-    Await.result(api.resourcesByIds(List(apiTest, apiTest1), tags = true, context = true).map {
+    Await.result(api.resourcesByIds(List(testId, apiTest1), tags = true, context = true).map {
       response =>
-        response.resources.map(_.public_id).toSet should equal(Set(apiTest, apiTest1))
-        response.resources.map(_.tags).toSet should contain(List(apiTestTag))
+        response.resources.map(_.public_id).toSet should equal(Set(testId, apiTest1))
+        response.resources.map(_.tags).toSet should contain(List(prefix, testTag, apiTag))
         response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
@@ -152,10 +146,10 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   // remove the ignore if the account used for testing supports filenameContains parameter
   ignore should "allow listing resources by filenameContains" in {
     val (resources1, resources2, resources3) = Await.result(for {
-      rootUploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId("sample_test_contains"))
-      topUploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder").publicId("sample_test_contains"))
-      subUploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder/sub_folder").publicId("Amphibian_test_contains"))
-      folderMatchUploadResponse <- cloudinary.uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder/amphetamines").publicId("benzedrine_test_contains"))
+      rootUploadResponse <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId("sample_test_contains"))
+      topUploadResponse <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder").publicId("sample_test_contains"))
+      subUploadResponse <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder/sub_folder").publicId("Amphibian_test_contains"))
+      folderMatchUploadResponse <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().folder("top_folder/amphetamines").publicId("benzedrine_test_contains"))
       resources1Response <- api.resources(`type` = "upload", prefix = "top_folder/", filenameContains = "amp") if rootUploadResponse != null && topUploadResponse != null && subUploadResponse != null && folderMatchUploadResponse != null
       resources2Response <- api.resources(`type` = "upload", prefix = "top_folder/", filenameContains = "amp", includeSubfolders = false) if rootUploadResponse != null && topUploadResponse != null && subUploadResponse != null && folderMatchUploadResponse != null
       resources3Response <- api.resources(`type` = "upload", filenameContains = "amp", includeSubfolders = false) if rootUploadResponse != null && topUploadResponse != null && subUploadResponse != null && folderMatchUploadResponse != null
@@ -171,8 +165,8 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow getting a resource's metadata" in {
-    val resource = Await.result(api.resource(apiTest, coordinates = true), 5 seconds)
-    resource.public_id should equal(apiTest)
+    val resource = Await.result(api.resource(testId, coordinates = true), 5 seconds)
+    resource.public_id should equal(testId)
     resource.bytes should equal(3381)
     resource.derived.size should equal(1)
     resource.customCoordinates should equal(List(CustomCoordinate(10,11,12,13)))
@@ -180,7 +174,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
 
   it should "allow deleting derived resource" in {
     val (resource, resourceAfterDelete) = Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().
+      r1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().
         publicId(apiTest3).
         eager(List(Transformation().w_(101).c_("scale"))))
       resource <- api.resource(apiTest3) if (r1 != null)
@@ -193,7 +187,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
 
   it should "allow deleting resources" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest3))
+      r1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest3))
       resource <- api.resource(apiTest3) if (r1 != null)
       r2 <- api.deleteResources(List("apit_test", apiTest2, apiTest3)) if resource != null
       throwable <- api.resource(apiTest3).recover { case e => e } if (r2 != null)
@@ -201,19 +195,21 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow deleting resources by prefix" in {
+    val apiTestByPrefix = s"${prefix}_${suffix}_ByPrefix"
+    val apiTestByPrefixId = s"${apiTestByPrefix}_id"
     Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTestByPrefix))
-      resource <- api.resource(apiTestByPrefix) if r1 != null
-      r2 <- api.deleteResourcesByPrefix(apiTestByPrefix.substring(0, 9)) if resource != null
-      throwable <- api.resource(apiTestByPrefix).recover { case e => e } if r2 != null
+      r1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTestByPrefixId))
+      resource <- api.resource(apiTestByPrefixId) if r1 != null
+      r2 <- api.deleteResourcesByPrefix(apiTestByPrefix) if resource != null
+      throwable <- api.resource(apiTestByPrefixId).recover { case e => e } if r2 != null
     } yield { throwable }, 5 seconds).isInstanceOf[NotFound] should be(true)
   }
 
-  val apiTestTagForDelete: String = prefix + "TagForDelete" + suffix
+  private val apiTestTagForDelete: String = prefix + "TagForDelete" + suffix
 
   it should "allow deleting resources by tags" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest4).tags(Set(apiTestTagForDelete)))
+      r1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest4).tags(Set(apiTestTagForDelete)))
       resource <- api.resource(apiTest4) if (r1 != null)
       r2 <- api.deleteResourcesByTag(apiTestTagForDelete) if resource != null
       throwable <- api.resource(apiTest4).recover { case e => e } if (r2 != null)
@@ -221,12 +217,12 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing tags" in {
-    Await.result(api.tags(maxResults = 500).map(r => r.tags), 5 seconds) should contain(apiTestTag)
+    Await.result(api.tags(maxResults = 500).map(r => r.tags), 5 seconds) should contain(testTag)
   }
 
   it should "allow listing tags by prefix" in {
-    Await.result(api.tags(prefix = apiTest).map(r => r.tags), 5 seconds) should contain(apiTestTag)
-    Await.result(api.tags(prefix = apiTest + "NoSuchTag").map(r => r.tags), 5 seconds) should equal(List())
+    Await.result(api.tags(prefix = testId).map(r => r.tags), 5 seconds) should contain(testTag)
+    Await.result(api.tags(prefix = testId + "NoSuchTag").map(r => r.tags), 5 seconds) should equal(List())
   }
 
   it should "allow listing transformations" in {
@@ -403,14 +399,14 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   
   it should "support setting manual moderation status" in {
     Await.result(for  {
-      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
+      uploadResult <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
       apiResult <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().moderationStatus(ModerationStatus.approved))
     } yield apiResult, 10.seconds).moderation.head.status should equal(ModerationStatus.approved)
   }
   
   it should "support requesting raw conversion" in {
     val error = Await.result(for {
-      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png")
+      uploadResult <- uploader.upload(s"$testResourcePath/logo.png")
       e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().rawConvert("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Illegal value")
@@ -418,7 +414,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   
   it should "support requesting categorization" in {
     val error = Await.result(for {
-      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png")
+      uploadResult <- uploader.upload(s"$testResourcePath/logo.png")
       e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().categorization("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Illegal value")
@@ -426,7 +422,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   
   it should "support requesting detection" in {
     val error = Await.result(for {
-      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png")
+      uploadResult <- uploader.upload(s"$testResourcePath/logo.png")
       e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().detection("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Illegal value")
@@ -434,7 +430,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
     
   it should "support requesting auto_tagging" in {
     val error = Await.result(for {
-      uploadResult <- cloudinary.uploader().upload(s"$testResourcePath/logo.png")
+      uploadResult <- uploader.upload(s"$testResourcePath/logo.png")
       e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().autoTagging(0.5)).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("Must use")
@@ -442,9 +438,9 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   
   it should "support listing by moderation kind and value" in {
     Await.result(for {
-      result1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
-      result2 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
-      result3 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
+      result1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
+      result2 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
+      result3 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
       apiresult1 <- cloudinary.api.update(result1.public_id, UpdateParameters().moderationStatus(ModerationStatus.approved))
       apiresult2 <- cloudinary.api.update(result2.public_id, UpdateParameters().moderationStatus(ModerationStatus.rejected))
       approved <- cloudinary.api.resourcesByModeration(status = ModerationStatus.approved, maxResults = 1000, moderations = true) if result3 != null && apiresult1 != null && apiresult2 != null
@@ -463,7 +459,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
       pending.resources.forall(_.moderationStatus == Some(ModerationStatus.pending)) should be(true)
       pending.resources.map(_.public_id) should not contain(result1.public_id)
       pending.resources.map(_.public_id) should not contain(result2.public_id)
-    }, 10.seconds)
+    }, 20.seconds)
   }
 
   // For this test to work, 'Auto-create folders' should be enabled in the Upload Settings,
@@ -471,10 +467,10 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   // Comment out this line if you really want to test it.
   ignore should "support listing folders" in {
     Await.result(for {
-      result1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/item"))
-      result2 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder2/item"))
-      result3 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/test_subfolder1/item"))
-      result4 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/test_subfolder2/item"))
+      result1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/item"))
+      result2 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder2/item"))
+      result3 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/test_subfolder1/item"))
+      result4 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId("test_folder1/test_subfolder2/item"))
       apiresult1 <- cloudinary.api.rootFolders if result1 != null && result2 != null && result3 != null && result4 != null
       apiresult2 <- cloudinary.api.subfolders("test_folder1") if result1 != null && result2 != null && result3 != null && result4 != null
       apiresult3 <- cloudinary.api.subfolders("test_folder").recover{case e => e} if result1 != null && result2 != null && result3 != null && result4 != null
@@ -490,7 +486,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   //Remove ignore to test delete all - note use with care!!!
   ignore should "allow deleting all resources" in {
     Await.result(for {
-      r1 <- cloudinary.uploader().upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest5).eager(List(Transformation().w_(0.2).c_("scale"))))
+      r1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().publicId(apiTest5).eager(List(Transformation().w_(0.2).c_("scale"))))
       resource1 <- api.resource(apiTest5) if (r1 != null)
       r2 <- api.deleteAllResources(keepOriginal = true) if resource1 != null
       resource2 <- api.resource(apiTest5)

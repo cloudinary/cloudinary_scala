@@ -8,17 +8,15 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
 import org.scalatest.{Matchers, _}
+import scala.language.postfixOps
 import com.cloudinary.Api.{ASCENDING, DESCENDING}
 
 class SearchSpec extends MockableFlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll {
   val testResourcePath = "cloudinary-core/src/test/resources"
-  val prefix = "cloudinary_scala"
-  val suffix = sys.env.getOrElse("TRAVIS_JOB_ID", scala.util.Random.nextInt(9999).toString)
-
-  val testTag = prefix + "_" + suffix
   val searchTag = testTag + "_search"
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     val options = UploadParameters().
       tags(Set(prefix, testTag, searchTag)).
       context(Map("key" -> "value")).
@@ -32,6 +30,7 @@ class SearchSpec extends MockableFlatSpec with Matchers with OptionValues with I
     Thread.sleep(3000)
   }
   override def afterAll(): Unit = {
+    super.afterAll()
     cloudinary.api().deleteResourcesByTag(searchTag)
   }
 
