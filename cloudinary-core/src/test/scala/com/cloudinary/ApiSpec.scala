@@ -75,14 +75,14 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing resources" in {
-    val v = Await.result(api.resources(maxResults = 500).map(response => response.resources.find(r => r.public_id == testId && r.`type` == "upload")), 5 seconds)
+    val v = Await.result(api.resources(maxResults = 500).map(response => response.resources.find(r => r.public_id == testId && r.`type` == "upload")), 10 seconds)
     v.isDefined should be(true)
   }
 
   it should "allow listing resources with cursor" in {
     val cursor = "OJNASGONQG0230JGV0JV3Q0IDVO"
     val (provider, api) = mockApi()
-    (provider.execute _) expects where { (request: Request, *) => {
+    (provider.execute _) expects where { (request: Request, _) => {
       val params = getQuery(request)
       params.contains(("next_cursor", cursor))
     }
@@ -93,9 +93,9 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   it should "allow listing resources by type" in {
     Await.result(api.resources(`type` = "upload", prefix = prefix, tags = true, context = true, maxResults = 500).map {
       response =>
-        response.resources.map(_.public_id).toSet should contain(testId)
-        response.resources.map(_.tags).toSet should contain(List(prefix, testTag, apiTag))
-        response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
+        response.resources.map(_.public_id) should contain(testId)
+        response.resources.map(_.tags) should contain(List(prefix, testTag, apiTag))
+        response.resources.map(_.context) should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 
@@ -103,8 +103,8 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
     Await.result(api.resources(`type` = "upload", prefix = testId, tags = true, context = true).map {
       response =>
         response.resources.map(_.public_id).foreach(_ should startWith(testId))
-        response.resources.map(_.tags).toSet should contain(List(prefix, testTag, apiTag))
-        response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
+        response.resources.map(_.tags) should contain(List(prefix, testTag, apiTag))
+        response.resources.map(_.context) should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 
@@ -126,8 +126,8 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
     Await.result(api.resourcesByIds(List(testId, apiTest1), tags = true, context = true).map {
       response =>
         response.resources.map(_.public_id) should contain only(testId, apiTest1)
-        response.resources.map(_.tags).toSet should contain(List(prefix, testTag, apiTag))
-        response.resources.map(_.context).toSet should contain(Map("custom" -> Map("key" -> "value")))
+        response.resources.map(_.tags) should contain(List(prefix, testTag, apiTag))
+        response.resources.map(_.context) should contain(Map("custom" -> Map("key" -> "value")))
     }, 5 seconds)
   }
 

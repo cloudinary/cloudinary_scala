@@ -20,14 +20,16 @@ object EagerTest extends Tag("com.cloudinary.tags.EagerTest")
 
 class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll {
 
-  val testResourcePath = "cloudinary-core/src/test/resources"
-  val uploadTag = testTag + "_upload"
-  val options = UploadParameters().tags(Set(prefix, testTag, uploadTag))
-  val uploader : Uploader = cloudinary.uploader()
-  
+  private val testResourcePath = "cloudinary-core/src/test/resources"
+  private val uploadTag = testTag + "_upload"
+  private val options = UploadParameters().tags(Set(prefix, testTag, uploadTag))
+  private val uploader : Uploader = cloudinary.uploader()
+
+  private val api = cloudinary.api()
+
   override def afterAll(): Unit = {
     super.afterAll()
-    cloudinary.api().deleteResourcesByTag(uploadTag)
+    api.deleteResourcesByTag(uploadTag)
   }
 
   behavior of "An Uploader"
@@ -112,7 +114,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
 
     Await result (
       uploader.rename(publicId1, publicId1 + "2") andThen {
-        case r => cloudinary.api().resource(publicId1 + "2")
+        case r => api.resource(publicId1 + "2")
       }, 5 seconds) should not eq null
 
     val result2 = Await result (
@@ -130,7 +132,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
     val result4 = Await result (
       uploader.rename(publicId2, publicId1 + "2", overwrite = true) andThen {
         case Success(json) =>
-          cloudinary.api().resource(publicId1 + "2")
+          api.resource(publicId1 + "2")
       }, 5 seconds)
     result4.format should equal("ico")
   }
@@ -211,12 +213,12 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
       id2 <- uploader.upload(s"$testResourcePath/logo.png").map(_.public_id)
       tagResult1 <- uploader.addTag("tag1", List(id1, id2))
       tagResult2 <- uploader.addTag("tag2", List(id1))
-      tags1 <- cloudinary.api().resource(id1).map(_.tags)
-      tags2 <- cloudinary.api().resource(id2).map(_.tags)
+      tags1 <- api.resource(id1).map(_.tags)
+      tags2 <- api.resource(id2).map(_.tags)
       tagResult3 <- uploader.removeTag("tag1", List(id1))
-      tags3 <- cloudinary.api().resource(id1).map(_.tags)
+      tags3 <- api.resource(id1).map(_.tags)
       tagResult4 <- uploader.replaceTag("tag3", List(id1))
-      tags4 <- cloudinary.api().resource(id1).map(_.tags)
+      tags4 <- api.resource(id1).map(_.tags)
     } yield (tags1, tags2, tags3, tags4), 20 seconds) should equal(
       (List("tag1", "tag2"), List("tag1"), List("tag2"), List("tag3")))
   }
@@ -244,9 +246,9 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
     val faces2 = List(FaceInfo(122, 32, 111, 152))
     Await.result(for {
       r1 <- uploader.upload(s"$testResourcePath/logo.png", options.faceCoordinates (faces1))
-      resource1 <- cloudinary.api.resource(r1.public_id, faces=true) if r1 != null
+      resource1 <- api.resource(r1.public_id, faces=true) if r1 != null
       r2 <- uploader.explicit(r1.public_id, `type` = "upload", faceCoordinates = faces2) if resource1 != null
-      resource2 <- cloudinary.api.resource(r1.public_id, faces=true) if r2 != null
+      resource2 <- api.resource(r1.public_id, faces=true) if r2 != null
     } yield {
       resource1.faces should equal(faces1)
       resource2.faces should equal(faces2)
@@ -315,11 +317,11 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   it should "support unsigned uploading using presets" taggedAs(UploadPresetTest) in {
     val c = cloudinary.withConfig(Map("api_key" -> null, "api_secret" -> null)) 
     val (presetName, uploadResult) = Await.result(for {
-      preset <- cloudinary.api.createUploadPreset(UploadPreset(unsigned = true, settings = options.folder("upload_folder")))
-      result <- c.uploader.unsignedUpload(s"$testResourcePath/logo.png", preset.name)
+      preset <- api.createUploadPreset(UploadPreset(unsigned = true, settings = options.folder("upload_folder")))
+      result <- uploader.unsignedUpload(s"$testResourcePath/logo.png", preset.name)
     } yield (preset.name, result), 10.seconds)
     uploadResult.public_id should fullyMatch regex "upload_folder/[a-z0-9]+"
-    Await.result(cloudinary.api.deleteUploadPreset(presetName), 5.seconds)
+    Await.result(api.deleteUploadPreset(presetName), 5.seconds)
   }
 
   it should "support uploading with eager async transformations" taggedAs(EagerTest) in {
