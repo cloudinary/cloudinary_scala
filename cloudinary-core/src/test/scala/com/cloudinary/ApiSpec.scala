@@ -44,13 +44,13 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val options = UploadParameters().publicId(testId).
+    val options = UploadParameters().
       tags(Set(prefix, testTag, apiTag)).
       context(Map("key" -> "value")).
       customCoordinates(List(CustomCoordinate(10,11,12,13))).
       eager(List(Transformation().w_(100).c_("scale")))
     Await.result(for {
-    r5 <- uploader.upload(s"$testResourcePath/logo.png", options).recover { case _ => "r5 failed" }
+    r5 <- uploader.upload(s"$testResourcePath/logo.png", options.publicId(testId)).recover { case _ => "r5 failed" }
     r6 <- uploader.upload(s"$testResourcePath/logo.png", options.publicId(apiTest1)).recover { case _ => "r6 failed" }
     } yield (r5, r6), 20 seconds)
   }
@@ -80,12 +80,14 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing resources with cursor" in {
-    val r1 = Await.result(api.resources(maxResults = 1), 5 seconds)
-    r1.resources.size should equal(1)
-    r1.next_cursor.isDefined should be(true)
-    val r2 = Await.result(api.resources(maxResults = 1, nextCursor = r1.next_cursor), 5 seconds)
-    r2.resources.size should equal(1)
-    r1.resources(0).public_id should not equal (r2.resources(0).public_id)
+    val cursor = "OJNASGONQG0230JGV0JV3Q0IDVO"
+    val (provider, api) = mockApi()
+    (provider.execute _) expects where { (request: Request, *) => {
+      val params = getQuery(request)
+      params.contains(("next_cursor", cursor))
+    }
+    }
+    api.resources(maxResults = 1, nextCursor = cursor)
   }
 
   it should "allow listing resources by type" in {
@@ -112,7 +114,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing resources by tag" in {
-    Await.result(api.resourcesByTag(testTag, tags = true, context = true).map {
+    Await.result(api.resourcesByTag(testTag, tags = true, context = true, maxResults = 500).map {
       response =>
         response.resources.map(_.public_id).toSet should equal(Set(testId, apiTest1))
         response.resources.map(_.tags).toSet should contain(List(prefix, testTag, apiTag))
