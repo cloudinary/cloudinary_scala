@@ -1,4 +1,10 @@
 
+1.2.1 / 2017-05-15
+==================
+
+  * Fix `resourcesByIds` to allow comma in public ids.
+  * Refactor test to allow concurrent run.
+
 1.2.0 / 2017-05-01
 ==================
 
