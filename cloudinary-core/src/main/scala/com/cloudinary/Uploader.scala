@@ -89,7 +89,15 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     callApi[UploadResponse]("upload", params.toMap, file, resourceType, params.signed, requestTimeout)
   }
 
+  def uploadLarge(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), resourceType: String = "raw", bufferSize: Int = 20000000) = {
+    uploadLargeInternal(file, params, resourceType, bufferSize)
+  }
+
   def uploadLargeRaw(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), bufferSize: Int = 20000000) = {
+    uploadLargeInternal(file, params, "raw", bufferSize)
+  }
+
+  private def uploadLargeInternal(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), resourceType: String, bufferSize: Int = 20000000) = {
     val (input, fileName) = file match {
       case s: String =>
         val f = new File(s)
@@ -99,7 +107,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
       case is: InputStream => (is, None)
     }
     try {
-      uploadLargeRawPart(input, params, fileName, bufferSize)
+      uploadLargePart(input, params, fileName, resourceType, bufferSize)
     } catch {
       case e: Exception =>
         input.close()
@@ -107,7 +115,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     }
   }
 
-  private def uploadLargeRawPart(input: InputStream, params: LargeUploadParameters, originalFileName: Option[String], bufferSize: Int, partNumber: Int = 1): Future[LargeRawUploadResponse] = {
+  private def uploadLargePart(input: InputStream, params: LargeUploadParameters, originalFileName: Option[String], resourceType: String = "image", bufferSize: Int, partNumber: Int = 1): Future[LargeRawUploadResponse] = {
     val uploadParams = params.toMap + ("part_number" -> partNumber.toString)
     val (last, buffer) = readChunck(input, bufferSize)
     val part = new ByteArrayPart("file", buffer)
@@ -115,16 +123,16 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     (partNumber, last) match {
       case (_, true) =>
         input.close()
-        callApi[LargeRawUploadResponse]("upload_large", uploadParams + ("final" -> "1"), part, "raw")
+        callApi[LargeRawUploadResponse]("upload_large", uploadParams + ("final" -> "1"), part, resourceType)
       case (1, _) =>
-        val responseFuture = callApi[LargeRawUploadResponse]("upload_large", uploadParams, part, "raw")
+        val responseFuture = callApi[LargeRawUploadResponse]("upload_large", uploadParams, part, resourceType)
         responseFuture.flatMap { response =>
-          uploadLargeRawPart(input, params.publicId(response.public_id).uploadId(response.upload_id.get), originalFileName, bufferSize, partNumber + 1)
+          uploadLargePart(input, params.publicId(response.public_id).uploadId(response.upload_id.get), originalFileName, resourceType, bufferSize, partNumber + 1)
         }
       case _ =>
-        val responseFuture = callApi[LargeRawUploadResponse]("upload_large", uploadParams, part, "raw")
+        val responseFuture = callApi[LargeRawUploadResponse]("upload_large", uploadParams, part, resourceType)
         responseFuture.flatMap {
-          response => uploadLargeRawPart(input, params, originalFileName, bufferSize, partNumber + 1)
+          response => uploadLargePart(input, params, originalFileName, resourceType, bufferSize, partNumber + 1)
         }
     }
   }
@@ -241,10 +249,10 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     val cloudinaryUploadUrl = cloudinary.cloudinaryApiUrl("upload", resourceType)
 
     s"""
-<input type="file" name="file" 
-		data-url="$cloudinaryUploadUrl" 
-		data-form-data="$tagParams" 
-		data-cloudinary-field="$field" 
+<input type="file" name="file"
+		data-url="$cloudinaryUploadUrl"
+		data-form-data="$tagParams"
+		data-cloudinary-field="$field"
 		class="$classes"
 		$htmlOptionsString/>
 """
