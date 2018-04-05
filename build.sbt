@@ -1,4 +1,4 @@
-lazy val cloudinaryCoreScala =
+lazy val core =
   project
     .in(file("cloudinary-core"))
     .settings(
@@ -16,16 +16,16 @@ lazy val cloudinaryCoreScala =
       scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
     )
 
-lazy val cloudinaryPlayPlugin =
+lazy val playPlugin =
   project
     .in(file("cloudinary-play-plugin"))
     .enablePlugins(PlayScala)
-    .dependsOn(cloudinaryCoreScala)
+    .dependsOn(core)
     .settings(
       libraryDependencies += "com.google.inject" % "guice" % "4.1.0"
     )
 
-lazy val photoAlbumScala =
+lazy val sample =
   project
     .in(file("samples/photo_album"))
     .settings(
@@ -42,15 +42,15 @@ lazy val photoAlbumScala =
       routesGenerator := InjectedRoutesGenerator
     )
     .enablePlugins(PlayScala)
-    .dependsOn(cloudinaryPlayPlugin)
+    .dependsOn(playPlugin)
 
 lazy val root =
   project
     .in(file("."))
     .aggregate(
-      cloudinaryCoreScala,
-      cloudinaryPlayPlugin,
-      photoAlbumScala
+      core,
+      playPlugin,
+      sample
     )
     .settings(
       aggregate in update := false,
