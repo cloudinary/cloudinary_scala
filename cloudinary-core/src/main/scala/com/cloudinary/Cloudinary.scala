@@ -1,43 +1,40 @@
-package com.cloudinary;
+package com.cloudinary
 
-import java.security.SecureRandom
-import java.security.MessageDigest
-import java.security.NoSuchAlgorithmException
-import java.net.URI
-import java.net.URLDecoder
-import java.io.UnsupportedEncodingException
+import java.net.{ URI, URLDecoder }
+import java.security.{ MessageDigest, NoSuchAlgorithmException, SecureRandom }
+
 import _root_.com.ning.http.client.RequestBuilder
 
 object Cloudinary {
-  final val CF_SHARED_CDN = "d3jpl91pxevbkh.cloudfront.net";
-  final val OLD_AKAMAI_SHARED_CDN = "cloudinary-a.akamaihd.net";
-  final val AKAMAI_SHARED_CDN = "res.cloudinary.com";
-  final val SHARED_CDN = AKAMAI_SHARED_CDN;
+  final val CF_SHARED_CDN = "d3jpl91pxevbkh.cloudfront.net"
+  final val OLD_AKAMAI_SHARED_CDN = "cloudinary-a.akamaihd.net"
+  final val AKAMAI_SHARED_CDN = "res.cloudinary.com"
+  final val SHARED_CDN = AKAMAI_SHARED_CDN
   final val VERSION = "1.2.1"
   final val USER_AGENT = s"cld-scala-$VERSION"
 
   def configFromUrl(cloudinaryUrl: String): Map[String, Any] = {
-    val cloudinaryUri = new URI(cloudinaryUrl);
-    val creds = cloudinaryUri.getUserInfo().split(":")
+    val cloudinaryUri = new URI(cloudinaryUrl)
+    val creds = cloudinaryUri.getUserInfo.split(":")
     val m = Map(
       "cloud_name" -> cloudinaryUri.getHost,
       "api_key" -> creds(0),
       "api_secret" -> creds(1),
-      "private_cdn" -> cloudinaryUri.getPath(),
-      "secure_distribution" -> cloudinaryUri.getPath())
+      "private_cdn" -> cloudinaryUri.getPath,
+      "secure_distribution" -> cloudinaryUri.getPath)
 
-    if (cloudinaryUri.getQuery() != null) {
-      m ++ cloudinaryUri.getQuery().split("&").map {
+    if (cloudinaryUri.getQuery != null) {
+      m ++ cloudinaryUri.getQuery.split("&").map {
         param: String =>
           val kv = param.split("=")
-          (kv.head -> URLDecoder.decode(kv.last, "ASCII"))
+          kv.head -> URLDecoder.decode(kv.last, "ASCII")
       }
     } else m
   }
 
   private def bytes2Hex(bytes: Array[Byte]): String = bytes.map("%02X" format _).mkString
 
-  private final val RND = new SecureRandom();
+  private final val RND = new SecureRandom()
 
   def signedPreloadedImage(result: Map[String, _]): String =
     (for {
@@ -54,7 +51,7 @@ object Cloudinary {
 
     val params = paramsToSign.toList.sortBy(_._1) collect {
       case (k, v: Iterable[_]) => s"$k=${v.mkString(",")}"
-      case (k, v) if (v != null && v.toString() != "") => s"$k=$v"
+      case (k, v) if v != null && v.toString != "" => s"$k=$v"
     }
 
     val digest = sign(params.mkString("&"), apiSecret)
@@ -69,13 +66,13 @@ object Cloudinary {
       case e: NoSuchAlgorithmException => throw new RuntimeException("Unexpected exception", e);
     }
 
-    md.digest((toSign + apiSecret).getBytes());
+    md.digest((toSign + apiSecret).getBytes())
   }
 
   private[cloudinary] def randomPublicId() = {
-    val bytes = new Array[Byte](8);
-    RND.nextBytes(bytes);
-    bytes2Hex(bytes);
+    val bytes = new Array[Byte](8)
+    RND.nextBytes(bytes)
+    bytes2Hex(bytes)
   }
 
   private[cloudinary] def asString(value: Any, defaultValue: Option[String] = None): Option[String] =
@@ -86,7 +83,7 @@ object Cloudinary {
         case Some(x) => asString(x, defaultValue)
         case None => defaultValue
       }
-      case _ => Some(value.toString())
+      case _ => Some(value.toString)
     }
 
   private[cloudinary] def asBoolean(value: Option[_]): Option[Boolean] = {
@@ -121,7 +118,7 @@ object Cloudinary {
 class Cloudinary(config: Map[String, Any]) {
 
   def this(cloudinaryUrl: String) {
-    this(Cloudinary.configFromUrl(cloudinaryUrl));
+    this(Cloudinary.configFromUrl(cloudinaryUrl))
   }
 
   def this() {
@@ -187,22 +184,22 @@ class Cloudinary(config: Map[String, Any]) {
       "format" -> format,
       "attachment" -> attachment,
       "type" -> `type`,
-      "timestamp" -> (System.currentTimeMillis() / 1000L).toLong.toString())
-    params = signRequest(params);
+      "timestamp" -> (System.currentTimeMillis() / 1000L).toLong.toString)
+    params = signRequest(params)
     val builder = new RequestBuilder("GET")
       .setUrl(cloudinaryApiUrl("download", resourceType))
 
     for (param <- params) {
-      builder.addQueryParam(param._1, param._2.toString())
+      builder.addQueryParam(param._1, param._2.toString)
     }
     builder.build()
   }
 
-  def privateDownloadUrl(publicId: String, format: String, resourceType: String = "image", attachment: Option[String] = None, `type`: Option[String] = None) = privateDownload(publicId, format, resourceType, attachment, `type`).getUrl()
+  def privateDownloadUrl(publicId: String, format: String, resourceType: String = "image", attachment: Option[String] = None, `type`: Option[String] = None) = privateDownload(publicId, format, resourceType, attachment, `type`).getUrl
 
   def zipDownload(tag: String, resourceType: String = "image", transformation: Option[Transformation] = None) = {
     var params = Map[String, Any](
-      "timestamp" -> (System.currentTimeMillis() / 1000L).toLong.toString(),
+      "timestamp" -> (System.currentTimeMillis() / 1000L).toLong.toString,
       "tag" -> tag)
 
     transformation match {
@@ -216,12 +213,12 @@ class Cloudinary(config: Map[String, Any]) {
       .setUrl(cloudinaryApiUrl("download_tag.zip", resourceType))
 
     for (param <- params) {
-      builder.addQueryParam(param._1, param._2.toString())
+      builder.addQueryParam(param._1, param._2.toString)
     }
     builder.build()
   }
 
-  def zipDownloadUrl(tag: String, resourceType: String = "image") = zipDownload(tag, resourceType).getUrl()
+  def zipDownloadUrl(tag: String, resourceType: String = "image") = zipDownload(tag, resourceType).getUrl
 
   def getBooleanConfig(key: String, defaultValue: Boolean): Boolean =
     Cloudinary.asBoolean(config.getOrElse(key, null), defaultValue)
