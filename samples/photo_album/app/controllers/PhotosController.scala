@@ -2,27 +2,20 @@ package controllers
 
 import javax.inject._
 
-import scala.concurrent._
-import ExecutionContext.Implicits.global
-
-import org.joda.time.DateTime
-
-import play.api._
-import play.api.mvc.Controller
-import play.api.mvc.Action
-import play.api.i18n.I18nSupport
-import play.api.i18n.MessagesApi
-
-import play.api.data._
-import play.api.data.Forms._
-
-import cloudinary.model.{CloudinaryResource, CloudinaryResourceBuilder}
-
+import cloudinary.model.{ CloudinaryResource, CloudinaryResourceBuilder }
+import com.cloudinary.Cloudinary
 import com.cloudinary.parameters.UploadParameters
-import com.cloudinary.Implicits._
-
+import com.cloudinary.response.UploadPreset
 import dao._
 import models._
+import org.joda.time.DateTime
+import play.api.data.Forms._
+import play.api.data._
+import play.api.i18n.{ I18nSupport, MessagesApi }
+import play.api.mvc.{ Action, Controller }
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent._
 
 class PhotosController @Inject() (
   photoDao:PhotoDAO, 
@@ -51,24 +44,47 @@ class PhotosController @Inject() (
   }
 
   def fresh = Action {
-    Ok(views.html.fresh(photoForm))
+    implicit req ⇒
+      Ok(
+        views.html.fresh(photoForm)
+      )
   }
 
   def freshDirect = Action {
-    Ok(views.html.freshDirect(directUploadForm))
+    implicit req ⇒
+      Ok(
+        views.html.freshDirect(directUploadForm)
+      )
   }
 
   def freshUnsignedDirect = Action {
-    // Preset creation does not really belong here - it's just here for the sample to work. 
-    // The preset should be created offline
+    implicit rh ⇒
 
-    val presetName = "sample_" + com.cloudinary.Cloudinary.apiSignRequest(
-        Map("api_key" -> cld.getStringConfig("api_key")), cld.getStringConfig("api_secret").get
-      ).substring(0, 10)
+      // Preset creation does not really belong here - it's just here for the sample to work.
+      // The preset should be created offline
 
-    cld.api.createUploadPreset(com.cloudinary.response.UploadPreset(presetName, true, UploadParameters().folder("preset_folder")))
+      val presetName =
+        "sample_" +
+        Cloudinary.apiSignRequest(
+          Map(
+            "api_key" -> cld.getStringConfig("api_key")
+          ),
+          cld.getStringConfig("api_secret").get
+        )
+        .substring(0, 10)
 
-    Ok(views.html.freshUnsignedDirect(directUploadForm, presetName))
+      cld
+        .api
+        .createUploadPreset(
+          UploadPreset(
+            presetName,
+            true,
+            UploadParameters()
+              .folder("preset_folder")
+          )
+        )
+
+      Ok(views.html.freshUnsignedDirect(directUploadForm, presetName))
   }
 
   def create = Action.async { implicit request =>

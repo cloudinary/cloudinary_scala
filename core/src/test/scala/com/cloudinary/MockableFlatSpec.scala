@@ -3,10 +3,9 @@ package com.cloudinary
 import java.net.URLDecoder
 
 import com.ning.http.client.multipart.StringPart
-import com.ning.http.client.{AsyncHttpClient, AsyncHttpClientConfig, AsyncHttpProvider, Request}
-import org.scalamock.clazz.Mock
+import com.ning.http.client.{ AsyncHttpClient, AsyncHttpClientConfig, AsyncHttpProvider, Request }
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{BeforeAndAfterEach, FlatSpec}
+import org.scalatest.{ BeforeAndAfterEach, FlatSpec }
 
 import scala.collection.JavaConverters._
 
