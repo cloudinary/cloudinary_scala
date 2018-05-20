@@ -1,7 +1,7 @@
 lazy val core =
   project
-    .in(file("cloudinary-core"))
     .settings(
+      name := "scala-core",
       libraryDependencies ++= Seq(
         "com.ning" % "async-http-client" % "1.9.40",
         "org.json4s" %% "json4s-native" % "3.5.3",
@@ -18,10 +18,11 @@ lazy val core =
 
 lazy val playPlugin =
   project
-    .in(file("cloudinary-play-plugin"))
+    .in(file("play-plugin"))
     .enablePlugins(PlayScala)
     .dependsOn(core)
     .settings(
+      name := "scala-play-plugin",
       libraryDependencies += "com.google.inject" % "guice" % "4.1.0"
     )
 
@@ -29,7 +30,6 @@ lazy val sample =
   project
     .in(file("samples/photo_album"))
     .settings(
-      name := "photo_album_scala",
       publishArtifact := false,
       libraryDependencies ++= Seq(
         "com.h2database" % "h2" % "1.4.188",

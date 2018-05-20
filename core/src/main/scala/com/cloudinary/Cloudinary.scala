@@ -138,7 +138,7 @@ class Cloudinary(config: Map[String, Any]) {
 
   def api() = new Api()
 
-  def search() = new Search()
+  def search() = Search()
 
   def cloudinaryApiUrlPrefix(): String = {
     val cloudinary = Cloudinary.asString(config.get("upload_prefix"),
@@ -184,7 +184,7 @@ class Cloudinary(config: Map[String, Any]) {
       "format" -> format,
       "attachment" -> attachment,
       "type" -> `type`,
-      "timestamp" -> (System.currentTimeMillis() / 1000L).toLong.toString)
+      "timestamp" -> (System.currentTimeMillis() / 1000L).toString)
     params = signRequest(params)
     val builder = new RequestBuilder("GET")
       .setUrl(cloudinaryApiUrl("download", resourceType))
@@ -199,7 +199,7 @@ class Cloudinary(config: Map[String, Any]) {
 
   def zipDownload(tag: String, resourceType: String = "image", transformation: Option[Transformation] = None) = {
     var params = Map[String, Any](
-      "timestamp" -> (System.currentTimeMillis() / 1000L).toLong.toString,
+      "timestamp" -> (System.currentTimeMillis() / 1000L).toString,
       "tag" -> tag)
 
     transformation match {

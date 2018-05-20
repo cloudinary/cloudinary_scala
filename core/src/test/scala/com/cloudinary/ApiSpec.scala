@@ -18,7 +18,12 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import collection.JavaConverters._
 
-class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Inside with BeforeAndAfterAll{
+class ApiSpec
+  extends MockableFlatSpec
+    with Matchers
+    with OptionValues
+    with Inside
+    with BeforeAndAfterAll {
 
   private lazy val api = cloudinary.api()
   private lazy val uploader = cloudinary.uploader()
