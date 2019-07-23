@@ -81,7 +81,7 @@ class Api(implicit cloudinary: Cloudinary) {
     uri: Iterable[String],
     params: A)(implicit mf: scala.reflect.Manifest[T], formats: Formats): Future[T] = {
     val json = write[A](params)
-    val request = createRequest(method, uri, Map.empty, contentType = Some("application/json"), body = Some(json))
+    val request = createRequest(method, uri, Map.empty, contentType = Some("application/json; charset=utf-8"), body = Some(json))
     httpclient.executeAndExtractResponse[T](request)
   }
 
