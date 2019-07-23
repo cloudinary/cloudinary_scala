@@ -430,14 +430,6 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
     error.asInstanceOf[BadRequest].message should include("Illegal value")
   }
 
-  it should "support requesting auto_tagging" in {
-    val error = Await.result(for {
-      uploadResult <- uploader.upload(s"$testResourcePath/logo.png")
-      e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().autoTagging(0.5)).recover{case e => e}
-    } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Must use")
-  }
-
   it should "support listing by moderation kind and value" in {
     Await.result(for {
       result1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))

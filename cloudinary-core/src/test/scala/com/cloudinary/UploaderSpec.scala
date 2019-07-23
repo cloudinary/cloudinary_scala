@@ -280,30 +280,23 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/docx.docx", options.rawConvert("illegal"), "raw").recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("not a valid")
+    error.asInstanceOf[BadRequest].message should include("is invalid")
   }
   
   it should "support requesting categorization" in {
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/logo.png", options.categorization("illegal")).recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("is invalid")
+    error.asInstanceOf[BadRequest].message should include("is not valid")
   }
   
   it should "support requesting detection" in {
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/logo.png", options.detection("illegal")).recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("not a valid")
+    error.asInstanceOf[BadRequest].message should include("is invalid")
   }
-    
-  it should "support requesting auto_tagging" in {
-    val error = Await.result(for {
-      e <- uploader.upload(s"$testResourcePath/logo.png", options.autoTagging(0.5)).recover{case e => e}
-    } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Must use")
-  }
-  
+
   it should "support uploading large raw files" in {
     Await.result(for {
       response <- uploader.uploadLargeRaw(s"$testResourcePath/docx.docx", LargeUploadParameters().tags(Set("large_upload_test_tag")))
