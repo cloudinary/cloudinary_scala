@@ -4,12 +4,14 @@ version := Common.version
 
 scalaVersion := Common.scalaVersion
 
+val playSlickVersion = "3.0.2"
+
 libraryDependencies ++= Seq(
   "com.h2database" % "h2" % "1.4.188",
-  "com.typesafe.play" %% "play-slick" % "1.0.1",
-  "com.typesafe.play" %% "play-slick-evolutions" % "1.0.1",
+  "com.typesafe.play" %% "play-slick" % playSlickVersion,
+  "com.typesafe.play" %% "play-slick-evolutions" % playSlickVersion,
   evolutions
-)     
+)
 
 resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 

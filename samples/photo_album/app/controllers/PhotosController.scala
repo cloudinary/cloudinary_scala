@@ -1,36 +1,32 @@
 package controllers
 
+import java.util.Locale
 import javax.inject._
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-
 import org.joda.time.DateTime
-
 import play.api._
 import play.api.mvc.Controller
 import play.api.mvc.Action
-import play.api.i18n.I18nSupport
-import play.api.i18n.MessagesApi
-
+import play.api.i18n._
 import play.api.data._
 import play.api.data.Forms._
-
 import cloudinary.model.{CloudinaryResource, CloudinaryResourceBuilder}
-
 import com.cloudinary.parameters.UploadParameters
 import com.cloudinary.Implicits._
-
 import dao._
 import models._
 
 class PhotosController @Inject() (
-  photoDao:PhotoDAO, 
-  cloudinaryResourceBuilder: CloudinaryResourceBuilder, 
+  photoDao:PhotoDAO,
+  cloudinaryResourceBuilder: CloudinaryResourceBuilder,
   val messagesApi: MessagesApi) extends Controller with I18nSupport {
-  
+
   implicit val cld:com.cloudinary.Cloudinary = cloudinaryResourceBuilder.cld
   import cloudinaryResourceBuilder.preloadedFormatter
+
+  implicit val messagesProvider: MessagesProvider = MessagesImpl(Lang(Locale.ENGLISH), messagesApi)
 
   val photoForm = Form(
     mapping(
@@ -59,7 +55,7 @@ class PhotosController @Inject() (
   }
 
   def freshUnsignedDirect = Action {
-    // Preset creation does not really belong here - it's just here for the sample to work. 
+    // Preset creation does not really belong here - it's just here for the sample to work.
     // The preset should be created offline
 
     val presetName = "sample_" + com.cloudinary.Cloudinary.apiSignRequest(
