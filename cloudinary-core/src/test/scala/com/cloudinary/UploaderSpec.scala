@@ -191,14 +191,15 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   }
 
   it should "support multi" in {
+    val tag = "multi_test_tag_" + suffix
     val (url1, url2, url3) = Await.result(for {
       r1 <- uploader.upload("http://cloudinary.com/images/logo.png",
-        options.tags(Set("multi_test_tag")).publicId("multi_test_tag_1"))
+        options.tags(Set(tag)).publicId(tag + "_1"))
       r2 <- uploader.upload("http://cloudinary.com/images/logo.png",
-        options.tags(Set("multi_test_tag")).publicId("multi_test_tag_2"))
-      url1 <- uploader.multi("multi_test_tag").map(_.url) if (r1 != null && r2 != null)
-      url2 <- uploader.multi("multi_test_tag", transformation = Transformation().w_(100)).map(_.url) if (r1 != null && r2 != null)
-      url3 <- uploader.multi("multi_test_tag", transformation = Transformation().w_(101), format = "pdf").map(_.url) if (r1 != null && r2 != null)
+        options.tags(Set(tag)).publicId(tag + "_2"))
+      url1 <- uploader.multi(tag).map(_.url) if (r1 != null && r2 != null)
+      url2 <- uploader.multi(tag, transformation = Transformation().w_(100)).map(_.url) if (r1 != null && r2 != null)
+      url3 <- uploader.multi(tag, transformation = Transformation().w_(101), format = "pdf").map(_.url) if (r1 != null && r2 != null)
     } yield (url1, url2, url3), 20 seconds)
 
     url1 should endWith(".gif")
