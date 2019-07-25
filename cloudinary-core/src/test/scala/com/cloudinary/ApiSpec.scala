@@ -223,7 +223,7 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   }
 
   it should "allow listing tags by prefix" in {
-    Await.result(api.tags(prefix = testId).map(r => r.tags), 5 seconds) should contain(testTag)
+    Await.result(api.tags(prefix = testId).map(r => r.tags), 5 seconds).size should be > 1
     Await.result(api.tags(prefix = testId + "NoSuchTag").map(r => r.tags), 5 seconds) should equal(List())
   }
 
@@ -430,19 +430,11 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
     error.asInstanceOf[BadRequest].message should include("Illegal value")
   }
 
-  it should "support requesting auto_tagging" in {
-    val error = Await.result(for {
-      uploadResult <- uploader.upload(s"$testResourcePath/logo.png")
-      e <- cloudinary.api.update(uploadResult.public_id, UpdateParameters().autoTagging(0.5)).recover{case e => e}
-    } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Must use")
-  }
-
   it should "support listing by moderation kind and value" in {
     Await.result(for {
-      result1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
-      result2 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
-      result3 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().moderation("manual"))
+      result1 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().tags(Set(prefix, testTag, apiTag)).moderation("manual"))
+      result2 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().tags(Set(prefix, testTag, apiTag)).moderation("manual"))
+      result3 <- uploader.upload(s"$testResourcePath/logo.png", UploadParameters().tags(Set(prefix, testTag, apiTag)).moderation("manual"))
       apiresult1 <- cloudinary.api.update(result1.public_id, UpdateParameters().moderationStatus(ModerationStatus.approved))
       apiresult2 <- cloudinary.api.update(result2.public_id, UpdateParameters().moderationStatus(ModerationStatus.rejected))
       approved <- cloudinary.api.resourcesByModeration(status = ModerationStatus.approved, maxResults = 1000, moderations = true) if result3 != null && apiresult1 != null && apiresult2 != null

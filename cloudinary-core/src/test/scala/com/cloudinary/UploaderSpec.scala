@@ -191,14 +191,15 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   }
 
   it should "support multi" in {
+    val tag = "multi_test_tag_" + suffix
     val (url1, url2, url3) = Await.result(for {
       r1 <- uploader.upload("http://cloudinary.com/images/logo.png",
-        options.tags(Set("multi_test_tag")).publicId("multi_test_tag_1"))
+        options.tags(Set(tag)).publicId(tag + "_1"))
       r2 <- uploader.upload("http://cloudinary.com/images/logo.png",
-        options.tags(Set("multi_test_tag")).publicId("multi_test_tag_2"))
-      url1 <- uploader.multi("multi_test_tag").map(_.url) if (r1 != null && r2 != null)
-      url2 <- uploader.multi("multi_test_tag", transformation = Transformation().w_(100)).map(_.url) if (r1 != null && r2 != null)
-      url3 <- uploader.multi("multi_test_tag", transformation = Transformation().w_(101), format = "pdf").map(_.url) if (r1 != null && r2 != null)
+        options.tags(Set(tag)).publicId(tag + "_2"))
+      url1 <- uploader.multi(tag).map(_.url) if (r1 != null && r2 != null)
+      url2 <- uploader.multi(tag, transformation = Transformation().w_(100)).map(_.url) if (r1 != null && r2 != null)
+      url3 <- uploader.multi(tag, transformation = Transformation().w_(101), format = "pdf").map(_.url) if (r1 != null && r2 != null)
     } yield (url1, url2, url3), 20 seconds)
 
     url1 should endWith(".gif")
@@ -280,30 +281,23 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/docx.docx", options.rawConvert("illegal"), "raw").recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("not a valid")
+    error.asInstanceOf[BadRequest].message should include("is invalid")
   }
   
   it should "support requesting categorization" in {
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/logo.png", options.categorization("illegal")).recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("is invalid")
+    error.asInstanceOf[BadRequest].message should include("is not valid")
   }
   
   it should "support requesting detection" in {
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/logo.png", options.detection("illegal")).recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("not a valid")
+    error.asInstanceOf[BadRequest].message should include("is invalid")
   }
-    
-  it should "support requesting auto_tagging" in {
-    val error = Await.result(for {
-      e <- uploader.upload(s"$testResourcePath/logo.png", options.autoTagging(0.5)).recover{case e => e}
-    } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("Must use")
-  }
-  
+
   it should "support uploading large raw files" in {
     Await.result(for {
       response <- uploader.uploadLargeRaw(s"$testResourcePath/docx.docx", LargeUploadParameters().tags(Set("large_upload_test_tag")))
