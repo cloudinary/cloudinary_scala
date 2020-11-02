@@ -13,6 +13,7 @@ resolvers += "sonatype releases" at "https://oss.sonatype.org/content/repositori
 resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 
 libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % version.value
+libraryDependencies += "com.google.inject" % "guice" % "3.0"
 
 pomExtra := {
   <url>http://cloudinary.com</url>
