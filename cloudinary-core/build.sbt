@@ -36,8 +36,8 @@ pomExtra := {
 
 libraryDependencies ++= Seq(
   "com.ning" % "async-http-client" % "1.9.40",
-  "org.json4s" %% "json4s-native" % "3.7.0-M7",
-  "org.json4s" %% "json4s-ext" % "3.7.0-M7",
+  "org.json4s" %% "json4s-native" % "3.6.10",
+  "org.json4s" %% "json4s-ext" % "3.6.10",
   "org.scalatest" %% "scalatest" % "3.2.2" % "test",
   "org.scala-lang.modules" %% "scala-xml" % "1.1.1",
   "org.nanohttpd" % "nanohttpd" % "2.2.0" % "test")
