@@ -10,7 +10,10 @@ import com.cloudinary.parameters._
 import com.cloudinary.response._
 import com.ning.http.client._
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{Matchers, _}
+import org.scalatest._
+import matchers.should._
+import matchers.should.Matchers._
+import org.scalatest.flatspec.AnyFlatSpec
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global

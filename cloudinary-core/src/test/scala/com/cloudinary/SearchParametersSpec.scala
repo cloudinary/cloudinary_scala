@@ -2,10 +2,12 @@ package com.cloudinary
 
 import com.cloudinary.Api.{ASCENDING, DESCENDING}
 import com.cloudinary.parameters.SearchParameters
-import org.scalatest.{FlatSpec, Inside, Matchers, OptionValues}
 import org.json4s.native.Serialization.write
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{Inside, OptionValues}
 
-class SearchParametersSpec extends FlatSpec with Matchers with OptionValues with Inside {
+class SearchParametersSpec extends AnyFlatSpec with Matchers with OptionValues with Inside {
   import SearchParameters.formats
 
   behavior of "SearchParameters"

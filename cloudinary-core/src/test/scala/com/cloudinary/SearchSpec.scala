@@ -3,7 +3,8 @@ package com.cloudinary
 import com.cloudinary.Api.ASCENDING
 import com.cloudinary.parameters.UploadParameters
 import com.cloudinary.response.CustomCoordinate
-import org.scalatest.{BeforeAndAfterAll, Inside, Matchers, OptionValues}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{BeforeAndAfterAll, Inside, OptionValues}
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global

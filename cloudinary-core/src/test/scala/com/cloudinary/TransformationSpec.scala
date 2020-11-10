@@ -2,9 +2,12 @@ package com.cloudinary
 
 import scala.language.postfixOps
 import org.scalatest._
-import org.scalatest.Matchers
+import matchers.should._
 
-class TransformationSpec extends FlatSpec with Matchers with OptionValues with Inside {
+import org.scalatest.flatspec.AnyFlatSpec
+
+
+class TransformationSpec extends AnyFlatSpec with Matchers with OptionValues with Inside {
   behavior of "A Transformation"
 
   lazy val cloudinary = {

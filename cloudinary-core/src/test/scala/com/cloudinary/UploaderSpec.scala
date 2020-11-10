@@ -7,7 +7,8 @@ import com.cloudinary.parameters._
 import com.cloudinary.response._
 import com.ning.http.client.Request
 import com.ning.http.client.multipart.StringPart
-import org.scalatest.{Matchers, _}
+import org.scalatest.{BeforeAndAfterAll, Inside, OptionValues, Tag, matchers}
+import matchers.should._
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -292,10 +293,11 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   }
   
   it should "support requesting detection" in {
+    //Detection invalid model 'illegal'".equals(message)
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/logo.png", options.detection("illegal")).recover{case e => e}
     } yield e, 10.seconds)
-    error.asInstanceOf[BadRequest].message should include("is invalid")
+    error.asInstanceOf[BadRequest].message should include("invalid model")
   }
 
   it should "support uploading large raw files" in {

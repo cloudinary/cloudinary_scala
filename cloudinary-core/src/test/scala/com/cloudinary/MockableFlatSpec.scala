@@ -6,11 +6,12 @@ import com.ning.http.client.multipart.StringPart
 import com.ning.http.client.{AsyncHttpClient, AsyncHttpClientConfig, AsyncHttpProvider, Request}
 import org.scalamock.clazz.Mock
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.{BeforeAndAfterEach, FlatSpec}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.BeforeAndAfterEach
 
 import scala.collection.JavaConverters._
 
-class MockableFlatSpec extends FlatSpec with MockFactory with BeforeAndAfterEach{
+class MockableFlatSpec extends AnyFlatSpec with MockFactory with BeforeAndAfterEach{
   protected val prefix = "cloudinary_scala"
   protected val suffix = sys.env.getOrElse("TRAVIS_JOB_ID", (10000 + scala.util.Random.nextInt(89999)).toString)
   protected val testId = s"${prefix}_$suffix"
