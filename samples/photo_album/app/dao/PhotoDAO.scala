@@ -1,22 +1,21 @@
 package dao
 
-import scala.concurrent.Future
-
+import scala.concurrent.{ExecutionContext, Future}
 import java.sql.Timestamp
+
 import javax.inject.Inject
 import org.joda.time.DateTime
 import models.Photo
 import com.cloudinary.Implicits._
 import cloudinary.model.{CloudinaryResource, CloudinaryResourceBuilder}
-
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.db.slick.HasDatabaseConfigProvider
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.db.NamedDatabase
-import slick.driver.JdbcProfile
+import slick.jdbc.JdbcProfile
 
 
-class PhotoDAO @Inject() (protected val dbConfigProvider: DatabaseConfigProvider, 
+class PhotoDAO @Inject() (implicit ec: ExecutionContext,
+                           protected val dbConfigProvider: DatabaseConfigProvider,
                           protected val resourceBuilder:CloudinaryResourceBuilder) extends HasDatabaseConfigProvider[JdbcProfile] {
   import driver.api._
 

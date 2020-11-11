@@ -5,11 +5,12 @@ version := Common.version
 scalaVersion := Common.scalaVersion
 
 libraryDependencies ++= Seq(
+
   "com.h2database" % "h2" % "1.4.188",
   "com.typesafe.play" %% "play-slick" % "3.0.4",
   "com.typesafe.play" %% "play-slick-evolutions" % "3.0.4",
   evolutions
-)     
+)
 
 resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
 
