@@ -5,11 +5,11 @@
 # ~~~~~
 # The secret key is used to secure cryptographics functions.
 # If you deploy your application to several instances be sure to use the same key!
-application.secret=":QnUA<B7c?jObBj0msUxlBBWI^4/CSBXlOUYXVwL:@V[M2e2FacjqL0/xOt`eC8m"
+play.http.secret.key=":QnUA<B7c?jObBj0msUxlBBWI^4/CSBXlOUYXVwL:@V[M2e2FacjqL0/xOt`eC8m"
 
 # The application languages
 # ~~~~~
-application.langs="en"
+play.i18n.langs=["en"]
 
 # Global object class
 # ~~~~~
@@ -28,26 +28,31 @@ application.langs="en"
 # Default to Routes in the root package (and conf/routes)
 # application.router=my.application.Routes
 
-slick.default="models.*"
+# Default database configuration
+slick.dbs.default.profile="slick.jdbc.H2Profile$"
+slick.dbs.default.db.driver="org.h2.Driver"
+slick.dbs.default.db.url="jdbc:h2:mem:play"
 
-# Logger
-# ~~~~~
-# You can also configure logback (http://logback.qos.ch/),
-# by providing an application-logger.xml file in the conf directory.
 
-# Root logger:
-logger.root=ERROR
+play.evolutions.autoApply = true
 
-# Logger used by the framework:
-logger.play=INFO
+play.filters.enabled += "play.filters.csrf.CSRFFilter"
 
-# Logger provided to your application:
-logger.application=DEBUG
+play.filters {
+  # Security headers filter configuration
+  headers {
+    # The Content-Security-Policy header. If null, the header is not set.
+
+    # contentSecurityPolicy = "default-src 'self' *.cloudinary.com; script-src 'self' http://localhost:9000 'unsafe-inline'; connect-src 'self'; img-src 'self' http://localhost:9000; style-src 'self' http://localhost:9000 'unsafe-inline'; font-src 'self' http://localhost:9000 'unsafe-inline'"
+    contentSecurityPolicy = "default-src 'self' *.cloudinary.com; script-src 'self' http://localhost:9000 'unsafe-inline'; style-src 'self' http://localhost:9000 'unsafe-inline'"
+
+  }
+}
 
 cloudinary = {
-  cloud_name = <CLOUD_NAME>
-  api_key = <API_KEY>
-  api_secret = <API_SECRET>
+  # cloud_name = <CLOUD_NAME>
+  # api_key = <API_KEY>
+  # api_secret = <API_SECRET>
   # or sepcify a CLOUDINARY_URL in env or explicitly
-  # url = ${?CLOUDINARY_URL}
+  url = ${CLOUDINARY_URL}
 }
