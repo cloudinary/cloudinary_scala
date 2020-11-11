@@ -23,7 +23,7 @@ To use it, add the following dependency to your `build.sbt`:
     
     resolvers += Resolver.file("Local Ivy", file(Path.userHome + "/.ivy2/local"))(Resolver.ivyStylePatterns)
     
-    libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % "1.2.1"
+    libraryDependencies += "com.cloudinary" %% "cloudinary-core-scala" % "2.0.0"
 
 If using the [Play 2.4](http://www.playframework.com/) you can add:
 
