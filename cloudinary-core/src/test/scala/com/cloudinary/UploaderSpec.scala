@@ -47,6 +47,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
     result.colors should not equal (Map())
     result.predominant should not equal (Map())
     result.pages should equal(1)
+    result.etag should equal("7dc60722d4653261648038b579fdb89e")
 
     val toSign = Map(
       "public_id" -> result.public_id,
