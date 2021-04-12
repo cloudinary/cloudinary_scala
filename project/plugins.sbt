@@ -2,9 +2,9 @@
 resolvers += "Typesafe repository" at "https://repo.typesafe.com/typesafe/releases/"
 
 // Use the Play sbt plugin for Play projects
-addSbtPlugin("com.typesafe.play" % "sbt-plugin" % System.getProperty("play.version", "2.3.7"))
+addSbtPlugin("com.typesafe.play" % "sbt-plugin" % System.getProperty("play.version", "2.8.8"))
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.0.0")
+addSbtPlugin("com.typesafe.sbt" % "sbt-less" % "1.1.2")
 
 // prefer to depend on these in ~/.sbt since this is only relevant for releasers
 
