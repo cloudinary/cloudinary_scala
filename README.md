@@ -1,5 +1,11 @@
 [![Build Status](https://travis-ci.org/cloudinary/cloudinary_scala.svg)](https://travis-ci.org/cloudinary/cloudinary_scala)
 
+> The Scala SDK is **deprecated** and is no longer maintained, with the exception of any high-priority regression bugs that may arise.
+> 
+> We recommend that you use one of Cloudinary's many active and fully supported SDKs. For details and complete documentation on all available
+[GitHub](https://github.com/search?o=desc&q=topic%3Acloudinary-sdk+org%3Acloudinary+fork%3Atrue&s=stars&type=Repositories), see our [Cloudinary SDK Guides](https://cloudinary.com/documentation/cloudinary_sdks).
+
+
 Cloudinary
 ==========
 
@@ -14,6 +20,8 @@ Cloudinary offers comprehensive APIs and administration capabilities and is easy
 Cloudinary provides URL and HTTP based APIs that can be easily integrated with any Web development framework. 
 
 For Scala, Cloudinary provides a library for simplifying the integration even further. A Scala Play plugin is provided as well.
+
+
 
 ## Setup ######################################################################
 
