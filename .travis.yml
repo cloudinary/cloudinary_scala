@@ -8,3 +8,8 @@ scala:
 
 jdk:
 - oraclejdk8
+
+notifications:
+  email:
+    recipients:
+      - sdk_developers@cloudinary.com
