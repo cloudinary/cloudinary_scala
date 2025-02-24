@@ -6,9 +6,9 @@ scalaVersion := Common.scalaVersion
 
 libraryDependencies ++= Seq(
 
-  "com.h2database" % "h2" % "1.4.188",
-  "com.typesafe.play" %% "play-slick" % "3.0.4",
-  "com.typesafe.play" %% "play-slick-evolutions" % "3.0.4",
+  "com.h2database" % "h2" % "latest.release",
+  "com.typesafe.play" %% "play-slick" % "latest.release",
+  "com.typesafe.play" %% "play-slick-evolutions" % "latest.release",
   evolutions
 )
 
