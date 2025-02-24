@@ -8,7 +8,7 @@ libraryDependencies ++= Seq(
 
   "com.h2database" % "h2" % "latest.release",
   "com.typesafe.play" %% "play-slick" % "latest.release",
-  "com.typesafe.play" %% "play-slick-evolutions" % "latest.release"
+  "com.typesafe.play" %% "play-slick-evolutions" % "latest.release",
   evolutions
 )
 
