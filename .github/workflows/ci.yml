@@ -1,0 +1,46 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scala-version: ['2.11.8', '2.12.8']
+        java-version: ['8']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+
+      - name: Cache SBT dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+            ~/.coursier/cache
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', 'project/build.properties', 'project/plugins.sbt') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Set CLOUDINARY_URL
+        run: |
+          export CLOUDINARY_URL=$(bash tools/get_test_cloud.sh)
+          echo "cloud_name: $(echo $CLOUDINARY_URL | cut -d'@' -f2)"
+          echo "CLOUDINARY_URL=$CLOUDINARY_URL" >> $GITHUB_ENV
+
+      - name: Run tests
+        run: sbt ++${{ matrix.scala-version }} test
+        env:
+          CLOUDINARY_URL: ${{ env.CLOUDINARY_URL }}
