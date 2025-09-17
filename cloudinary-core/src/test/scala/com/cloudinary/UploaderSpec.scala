@@ -138,19 +138,20 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
     result4.format should equal("ico")
   }
 
-  it should "handle explicit upload" in {
-    val result = Await.result(
-      uploader.explicit("cloudinary",
-        eager = List(Transformation().c_("scale").w_(2.0)),
-        `type` = "twitter_name"), 5 seconds)
-    val Some(url) = result.eager.headOption.map(_.url)
-    var expectedUrl = cloudinary.url().`type`("twitter_name")
-      .transformation(new Transformation().crop("scale").width(2.0))
-      .format("png").version(result.version).generate("cloudinary")
-    if (!cloudinary.cloudinaryApiUrlPrefix().startsWith("https://api.cloudinary.com")) {
-      expectedUrl = expectedUrl.replaceFirst("http://res\\.cloudinary\\.com", "/res")
-    }
-    expectedUrl should equal(url)
+  it should "handle explicit upload" ignore {
+    // Disabled: Twitter/X.com API no longer allows profile image access
+    // val result = Await.result(
+    //   uploader.explicit("cloudinary",
+    //     eager = List(Transformation().c_("scale").w_(2.0)),
+    //     `type` = "twitter_name"), 5 seconds)
+    // val Some(url) = result.eager.headOption.map(_.url)
+    // var expectedUrl = cloudinary.url().`type`("twitter_name")
+    //   .transformation(new Transformation().crop("scale").width(2.0))
+    //   .format("png").version(result.version).generate("cloudinary")
+    // if (!cloudinary.cloudinaryApiUrlPrefix().startsWith("https://api.cloudinary.com")) {
+    //   expectedUrl = expectedUrl.replaceFirst("http://res\\.cloudinary\\.com", "/res")
+    // }
+    // expectedUrl should equal(url)
   }
 
   it should "attach headers when specified, both as maps and as lists" in {
@@ -234,7 +235,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   it should "prevent non whitelisted formats from being uploaded if allowed_formats is specified" in {
     Await.result(for {
       error <- uploader.upload(s"$testResourcePath/logo.png", options.allowedFormats(Set("jpg"))).recover{case e => e}
-    } yield {error}, 5.seconds).isInstanceOf[BadRequest] should equal(true)  
+    } yield {error}, 5.seconds).isInstanceOf[BadRequest] should equal(true)
   }
 
   it should "allow non whitelisted formats if type is specified and convert to that type" in {
@@ -268,7 +269,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
       UploadParameters().callback("http://localhost/cloudinary_cors.html"),
       Map("class" -> "myclass")) should include("class=\"cloudinary-fileupload myclass\"")
   }
-  
+
   it should "support requesting manual moderation" in {
     Await.result(for  {
       result <- uploader.upload(s"$testResourcePath/logo.png", options.moderation("manual"))
@@ -277,21 +278,21 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
       result.moderation.head.kind should equal("manual")
     }, 10.seconds)
   }
-  
+
   it should "support requesting raw conversion" in {
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/docx.docx", options.rawConvert("illegal"), "raw").recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("is invalid")
   }
-  
+
   it should "support requesting categorization" in {
     val error = Await.result(for {
       e <- uploader.upload(s"$testResourcePath/logo.png", options.categorization("illegal")).recover{case e => e}
     } yield e, 10.seconds)
     error.asInstanceOf[BadRequest].message should include("is not valid")
   }
-  
+
   it should "support requesting detection" in {
     //Detection invalid model 'illegal'".equals(message)
     val error = Await.result(for {
@@ -311,7 +312,7 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   }
 
   it should "support unsigned uploading using presets" taggedAs(UploadPresetTest) in {
-    val c = cloudinary.withConfig(Map("api_key" -> null, "api_secret" -> null)) 
+    val c = cloudinary.withConfig(Map("api_key" -> null, "api_secret" -> null))
     val (presetName, uploadResult) = Await.result(for {
       preset <- api.createUploadPreset(UploadPreset(unsigned = true, settings = options.folder("upload_folder")))
       result <- uploader.unsignedUpload(s"$testResourcePath/logo.png", preset.name)
