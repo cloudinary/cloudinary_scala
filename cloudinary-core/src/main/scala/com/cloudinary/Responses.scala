@@ -45,9 +45,13 @@ case class UploadResponse(public_id: String, url: String, secure_url: String, si
   def width:Int = (raw \ "width").extractOpt[Int].getOrElse(0)
   def height:Int = (raw \ "height").extractOpt[Int].getOrElse(0)
   def format:String = (raw \ "format").extractOpt[String].getOrElse(null)
+  lazy val tags: Set[String] = (raw \ "tags").extractOpt[Array[String]].map(_.toSet).getOrElse(Set.empty)
 }
 case class LargeRawUploadResponse(public_id: String, url: String, secure_url: String, signature: String, bytes: Long,
-  resource_type: String, tags: List[String] = List(), upload_id:Option[String], done:Option[Boolean]) extends VersionedResponse with TimestampedResponse
+  resource_type: String) extends AdvancedResponse with VersionedResponse with TimestampedResponse {
+  override implicit val formats = DefaultFormats + new EnumNameSerializer(ModerationStatus)
+  lazy val tags: Set[String] = (raw \ "tags").extractOpt[Array[String]].map(_.toSet).getOrElse(Set.empty)
+}
 case class DestroyResponse(result: String) extends RawResponse
 case class ExplicitResponse(public_id: String, version: String, url: String, secure_url: String, signature: String, bytes: Long,
   format: String, eager: List[EagerInfo] = List(), `type`: String) extends RawResponse
@@ -95,10 +99,10 @@ case class TransformationUpdateResponse(message: String)
 case class UploadPresetsResponse(presets: List[UnparsedUploadPreset], next_cursor: Option[String]) extends RawResponse
 class UploadPresetResponse extends RawResponse {
   implicit val formats = DefaultFormats
-  lazy val preset = 
+  lazy val preset =
   UploadPreset(
-    (raw \ "name").extract[String], 
-    (raw \ "unsigned").extract[Boolean], 
+    (raw \ "name").extract[String],
+    (raw \ "unsigned").extract[Boolean],
     UploadParameters(raw \ "settings" match {
       case JObject(values) => values.collect{
           case ("face_coordinates", value:JObject) => "face_coordinates" -> FacesInfo(value.extract[List[FaceInfo]])
@@ -130,7 +134,7 @@ trait RawResponse {
   private[cloudinary] def raw_=(json: JsonAST.JValue) = rawJson = json
   def raw = rawJson
 
-  protected def parseTrasnsormation(t:JValue) = 
+  protected def parseTrasnsormation(t:JValue) =
     Transformation(for {
         JArray(l) <- t
       } yield {
@@ -178,7 +182,7 @@ trait TimestampedResponse extends RawResponse {
 
 trait AdvancedResponse extends RawResponse {
   implicit val formats = DefaultFormats + new EnumNameSerializer(ModerationStatus)
-  
+
   lazy val eager: List[EagerInfo] = (for {
     JArray(l) <- raw \ "eager"
     v <- l
@@ -226,7 +230,7 @@ trait AdvancedResponse extends RawResponse {
     JArray(l) <- raw \ "moderation"
     v <- l
   } yield v.extract[ModerationItem]
-  
+
   lazy val moderationStatus : Option[ModerationStatus.Value] = {
     val v = raw \ "moderation_status"
 	v.extractOpt[ModerationStatus.Value]

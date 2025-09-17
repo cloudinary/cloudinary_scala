@@ -66,7 +66,7 @@ case class Url(
    * cdn_subdomain and secure_cdn_subdomain
    * 1) Customers in shared distribution (e.g. res.cloudinary.com)
    *   if cdn_domain is true uses res-[1-5].cloudinary.com for both http and https. Setting secure_cdn_subdomain to false disables this for https.
-   * 2) Customers with private cdn 
+   * 2) Customers with private cdn
    *   if cdn_domain is true uses cloudname-res-[1-5].cloudinary.com for http
    *   if secure_cdn_domain is true uses cloudname-res-[1-5].cloudinary.com for https (please contact support if you require this)
    * 3) Customers with cname
@@ -76,14 +76,14 @@ case class Url(
     if (secure)
       getSecurePrefix(source)
     else {
-      val prefix = cname.map{ cname => 
+      val prefix = cname.map{ cname =>
         val subdomain = if (cdnSubdomain) s"a${shard(source)}." else ""
         s"http://$subdomain$cname"
       }.getOrElse {
         val host = List(
-          if (privateCdn) s"$cloudName-" else "", 
-          "res", 
-          if (cdnSubdomain) s"-${shard(source)}" else "", 
+          if (privateCdn) s"$cloudName-" else "",
+          "res",
+          if (cdnSubdomain) s"-${shard(source)}" else "",
           ".cloudinary.com").mkString
         s"http://$host"
       }
@@ -92,9 +92,9 @@ case class Url(
   }
 
   private def getSecurePrefix(source:String): String = {
-    val secureDistribution = 
+    val secureDistribution =
       this.secureDistribution match {
-        case None | Some(Cloudinary.OLD_AKAMAI_SHARED_CDN) if (privateCdn) => s"$cloudName-res.cloudinary.com" 
+        case None | Some(Cloudinary.OLD_AKAMAI_SHARED_CDN) if (privateCdn) => s"$cloudName-res.cloudinary.com"
         case None | Some(Cloudinary.OLD_AKAMAI_SHARED_CDN) => Cloudinary.SHARED_CDN
         case Some(value) => value
       }
@@ -105,8 +105,8 @@ case class Url(
       if (sharedDomain) cdnSubdomain else false
     )
 
-    val distribution = if (secureCdnSubdomain) 
-      secureDistribution.replaceAll("res.cloudinary.com", s"res-${shard(source)}.cloudinary.com") 
+    val distribution = if (secureCdnSubdomain)
+      secureDistribution.replaceAll("res.cloudinary.com", s"res-${shard(source)}.cloudinary.com")
     else secureDistribution
 
     val prefix = s"https://$distribution"
@@ -144,21 +144,21 @@ case class Url(
     }
     val prefix = getPrefix(source)
 
-    val version = (if (source.contains("/") && 
-                      !source.matches("v[0-9]+.*") && 
-                      !source.matches("https?:/.*") && 
+    val version = (if (source.contains("/") &&
+                      !source.matches("v[0-9]+.*") &&
+                      !source.matches("https?:/.*") &&
                       this.version.isEmpty) Some("1") else this.version).map("v" + _)
 
     val (finalSource, signableSource) = finalizeSource(source)
 
     val signature = if (signUrl) {
       val toSign = List(transformationStr, Some(signableSource)).flatten.mkString("/")
-      Some("s--" + 
+      Some("s--" +
           Base64.encode(Cloudinary.sign(toSign, apiSecret.getOrElse(throw new Exception("Must supply api secret to sign URLs")))).
           	take(8).
           	replace('+', '-').replace('/', '_') + "--")
     } else None
-    
+
     val pathComps = List(Some(prefix)) ++ finalizedResourceType ++ List(signature, transformationStr, version, Some(finalSource))
     pathComps.flatten.mkString("/").replaceAll("([^:])\\/+", "$1/")
   }
@@ -169,7 +169,7 @@ case class Url(
       val encodedSource = SmartUrlEncoder.encode(source)
       (encodedSource, encodedSource)
     } else {
-      val encodedSource = SmartUrlEncoder.encode(URLDecoder.decode(source.replace("+", "%2B"), "UTF-8")) 
+      val encodedSource = SmartUrlEncoder.encode(URLDecoder.decode(source.replace("+", "%2B"), "UTF-8"))
       val formatSuffix = format.map("." + _).getOrElse("")
       urlSuffix match {
         case Some(suffix) if suffix.matches(".*[\\./].*") => throw new IllegalArgumentException("urlSuffix should not include . or /")
@@ -179,7 +179,7 @@ case class Url(
     }
   }
 
-  private val finalizedResourceType = 
+  private val finalizedResourceType =
     ((resourceType, `type`, urlSuffix, useRootPath, shorten) match {
       case ("image", "upload", _, true, _) => List()
       case (_, _, _, true, _) => throw new IllegalArgumentException("Root path only supported for image/upload")
@@ -189,7 +189,7 @@ case class Url(
       case ("image", "upload", _, _, true) => List("iu")
       case (rt, t, _, _, _) => List(rt, t)
     }).map{Some(_)}
-  
+
 
   def generateSpriteCss(source: String) = {
     copy(`type` = "sprite")
@@ -223,4 +223,3 @@ case class Url(
     s"""<img $attributesHtml />"""
   }
 }
-

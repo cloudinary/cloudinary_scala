@@ -306,8 +306,67 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
       response <- uploader.uploadLargeRaw(s"$testResourcePath/docx.docx", LargeUploadParameters().tags(Set("large_upload_test_tag")))
     } yield {
       response.bytes should equal(new java.io.File(s"$testResourcePath/docx.docx").length())
-      response.tags should equal(List("large_upload_test_tag"))
-      response.done should equal(Some(true))
+      response.tags should equal(Set("large_upload_test_tag"))
+    }, 10.seconds)
+  }
+
+  it should "support uploading large raw files from File object" in {
+    val file = new java.io.File(s"$testResourcePath/docx.docx")
+    Await.result(for {
+      response <- uploader.uploadLargeRaw(file, LargeUploadParameters().tags(Set("large_upload_file_test")))
+    } yield {
+      response.bytes should equal(file.length())
+      response.tags should equal(Set("large_upload_file_test"))
+    }, 10.seconds)
+  }
+
+  it should "support uploading large raw files from Array[Byte]" in {
+    val fileBytes = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(s"$testResourcePath/docx.docx"))
+    Await.result(for {
+      response <- uploader.uploadLargeRaw(fileBytes, LargeUploadParameters().tags(Set("large_upload_bytes_test")))
+    } yield {
+      response.bytes should equal(fileBytes.length)
+      response.tags should equal(Set("large_upload_bytes_test"))
+    }, 10.seconds)
+  }
+
+  it should "support uploading large raw files from InputStream" in {
+    val file = new java.io.File(s"$testResourcePath/docx.docx")
+    val inputStream = new java.io.FileInputStream(file)
+    Await.result(for {
+      response <- uploader.uploadLargeRaw(inputStream, LargeUploadParameters().tags(Set("large_upload_stream_test")))
+    } yield {
+      response.bytes should equal(file.length())
+      response.tags should equal(Set("large_upload_stream_test"))
+    }, 10.seconds)
+  }
+
+  it should "support uploading large raw files from URL" in {
+    Await.result(for {
+      response <- uploader.uploadLargeRaw("http://cloudinary.com/images/logo.png", LargeUploadParameters().tags(Set("large_upload_url_test")))
+    } yield {
+      response.public_id should not be empty
+      response.tags should equal(Set("large_upload_url_test"))
+      response.resource_type should equal("raw")
+    }, 10.seconds)
+  }
+
+  it should "support uploading large files with different resource types using uploadLarge" in {
+    Await.result(for {
+      // Test image upload
+      imageResponse <- uploader.uploadLarge(s"$testResourcePath/logo.png", LargeUploadParameters().tags(Set("large_upload_image_test")), "image")
+      // Test raw upload
+      rawResponse <- uploader.uploadLarge(s"$testResourcePath/docx.docx", LargeUploadParameters().tags(Set("large_upload_raw_test")), "raw")
+    } yield {
+      // Image response should have image-specific properties
+      imageResponse.resource_type should equal("image")
+      imageResponse.width should be > 0
+      imageResponse.height should be > 0
+      imageResponse.tags should equal(Set("large_upload_image_test"))
+
+      // Raw response
+      rawResponse.resource_type should equal("raw")
+      rawResponse.tags should equal(Set("large_upload_raw_test"))
     }, 10.seconds)
   }
 

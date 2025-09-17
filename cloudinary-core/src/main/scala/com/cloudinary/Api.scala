@@ -18,7 +18,7 @@ object Api {
   case object POST extends HttpMethod("POST")
   case object PUT extends HttpMethod("PUT")
   case object DELETE extends HttpMethod("DELETE")
-  
+
   abstract class ListDirection(val dir:String)
   case object ASCENDING extends ListDirection("asc")
   case object DESCENDING extends ListDirection("desc")
@@ -205,7 +205,7 @@ class Api(implicit cloudinary: Cloudinary) {
 
   def transformation(t: Transformation, nextCursor: Option[String] = None, maxResults: Option[Int] = None):Future[TransformationResponse] =
     transformationByName(t.generate, nextCursor, maxResults)
-      
+
   def deleteTransformation(transformation: String):Future[TransformationUpdateResponse] = {
     callApi[TransformationUpdateResponse](Api.DELETE, "transformations" :: transformation :: Nil, Map());
   }

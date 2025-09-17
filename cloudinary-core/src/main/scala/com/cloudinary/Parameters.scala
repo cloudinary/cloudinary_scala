@@ -29,11 +29,11 @@ trait ParamFactory {
   def apply(key:String, value: Any) = param(key, value)
 
   def parameters: Map[String, _]
-  
+
   type Self
   protected def factory: Map[String,_] => Self
   protected def param(key:String, value:Any):Self = factory(parameters + (key -> value))
-  
+
   private def buildEager(transformations: Iterable[Transformation]): String =
     transformations.map {
       transformation: Transformation =>
@@ -74,7 +74,7 @@ trait UploadableResourceParams extends ParamFactory {
   def callback(value:String) = param("callback" , value)
   def format(value:String) = param("format" , value)
   def `type`(value:String) = param("type" , value)
-  def eager(value:List[Transformation]) = param("eager" , Transformations(value))  
+  def eager(value:List[Transformation]) = param("eager" , Transformations(value))
   def notificationUrl(value:String) = param("notification_url" , value)
   def eagerNotificationUrl(value:String) = param("eager_notification_url" , value)
   def proxy(value:String) = param("proxy" , value)
@@ -109,14 +109,10 @@ case class UploadParameters(parameters: Map[String, _] = Map(), signed:Boolean =
   protected val factory = (p: Map[String, _]) => UploadParameters(p, signed)
 }
 
-case class LargeUploadParameters(parameters: Map[String, _] = Map()) extends ParamFactory {
+case class LargeUploadParameters(parameters: Map[String, _] = Map(), signed: Boolean = true) extends UploadableResourceParams with UpdateableResourceParams {
   type Self = LargeUploadParameters
-  protected val factory = LargeUploadParameters.apply _
-  def `type`(value:String) = param("type" , value)
-  def publicId(value:String) = param("public_id" , value)
-  def backup(backup:Boolean) = param("backup" , backup)
+  protected val factory = (p: Map[String, _]) => LargeUploadParameters(p, signed)
   def uploadId(value:String) = param("upload_id" , value)
-  def tags(value:Set[String]) = param("tags" , StringSet(value))
 }
 
 case class TextParameters(text: String,
