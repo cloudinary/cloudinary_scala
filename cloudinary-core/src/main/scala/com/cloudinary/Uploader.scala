@@ -126,7 +126,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
   }
 
   def uploadLargeRaw(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), chunkSize: Int = 20000000): Future[LargeRawUploadResponse] = {
-    // Backwards compatibility wrapper - delegate to generic uploadLarge and convert response
+    // Backwards compatibility wrapper - delegate to generic uploadLarge
     uploadLarge(file, params, "raw", chunkSize).map { uploadResponse =>
       val response = LargeRawUploadResponse(
         public_id = uploadResponse.public_id,
@@ -174,21 +174,41 @@ class Uploader(implicit val cloudinary: Cloudinary) {
         // HTTP headers should not be included in signature parameters
         val uploadParams = updatedParams.toMap
 
-        val responseFuture = callApiWithHeaders[UploadResponse]("upload", uploadParams, part, resourceType,
+        val responseFuture = callApiWithHeaders[LargeUploadResponse]("upload", uploadParams, part, resourceType,
           Map("Content-Range" -> contentRange, "X-Unique-Upload-Id" -> uploadId), updatedParams.signed)
 
         responseFuture.flatMap { response =>
-          uploadResult = responseFuture
-          // Update params with public_id from response for subsequent chunks
-          updatedParams = updatedParams.publicId(response.public_id)
-
-          // Check if there's more data to upload
-          if (input.available() > 0) {
-            uploadNextChunk()
+          if (!response.done) {
+            // Intermediate response - continue with next chunk without updating public_id
+            if (input.available() > 0) {
+              uploadNextChunk()
+            } else {
+              // No more data but upload not done - this shouldn't happen
+              throw new RuntimeException("No more data to upload but server says not done")
+            }
           } else {
-            // Close the stream when upload is complete
-            try { input.close() } catch { case _: Exception => }
-            Future.successful(response)
+            // Final response - convert to UploadResponse and update params
+            val uploadResponse = UploadResponse(
+              public_id = response.public_id,
+              url = response.url,
+              secure_url = response.secure_url,
+              signature = response.signature,
+              bytes = response.bytes,
+              resource_type = response.resource_type
+            )
+            uploadResponse.raw = response.raw
+            val responseFuture = Future.successful(uploadResponse)
+            uploadResult = responseFuture
+            updatedParams = updatedParams.publicId(response.public_id)
+
+            // Check if there's more data to upload
+            if (input.available() > 0) {
+              uploadNextChunk()
+            } else {
+              // Close the stream when upload is complete
+              try { input.close() } catch { case _: Exception => }
+              Future.successful(uploadResponse)
+            }
           }
         }
       }

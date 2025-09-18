@@ -47,11 +47,12 @@ case class UploadResponse(public_id: String, url: String, secure_url: String, si
   def format:String = (raw \ "format").extractOpt[String].getOrElse(null)
   lazy val tags: Set[String] = (raw \ "tags").extractOpt[Array[String]].map(_.toSet).getOrElse(Set.empty)
 }
-case class LargeRawUploadResponse(public_id: String, url: String, secure_url: String, signature: String, bytes: Long,
-  resource_type: String) extends AdvancedResponse with VersionedResponse with TimestampedResponse {
-  override implicit val formats = DefaultFormats + new EnumNameSerializer(ModerationStatus)
-  lazy val tags: Set[String] = (raw \ "tags").extractOpt[Array[String]].map(_.toSet).getOrElse(Set.empty)
-}
+case class LargeUploadResponse(public_id: String = "", url: String = "", secure_url: String = "", signature: String = "", bytes: Long = 0,
+  resource_type: String = "", kind: String = "") extends LargeUploadResponseBase
+
+// Keep LargeRawUploadResponse for backward compatibility
+case class LargeRawUploadResponse(public_id: String = "", url: String = "", secure_url: String = "", signature: String = "", bytes: Long = 0,
+  resource_type: String = "", kind: String = "") extends LargeUploadResponseBase
 case class DestroyResponse(result: String) extends RawResponse
 case class ExplicitResponse(public_id: String, version: String, url: String, secure_url: String, signature: String, bytes: Long,
   format: String, eager: List[EagerInfo] = List(), `type`: String) extends RawResponse
@@ -237,6 +238,12 @@ trait AdvancedResponse extends RawResponse {
   }
 
   lazy val pages:Int = (raw \ "pages").extractOpt[Int].getOrElse(1)
+}
+
+trait LargeUploadResponseBase extends AdvancedResponse with VersionedResponse with TimestampedResponse {
+  override implicit val formats = DefaultFormats + new EnumNameSerializer(ModerationStatus)
+  lazy val tags: Set[String] = (raw \ "tags").extractOpt[Array[String]].map(_.toSet).getOrElse(Set.empty)
+  lazy val done: Boolean = (raw \ "done").extractOpt[Boolean].getOrElse(true)
 }
 
 class ImageAnalysis(raw: JsonAST.JValue) {

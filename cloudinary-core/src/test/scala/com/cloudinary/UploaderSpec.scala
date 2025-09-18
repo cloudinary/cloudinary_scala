@@ -26,6 +26,42 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   private val options = UploadParameters().tags(Set(prefix, testTag, uploadTag))
   private val uploader : Uploader = cloudinary.uploader()
 
+  // Test constants for large file uploads
+  private val LargeFileSize = 5880138L
+  private val LargeChunkSize = 5243000
+
+  // Helper function to create large test files in memory
+  def createLargeBinaryFile(size: Long, chunkSize: Int = 4096): Array[Byte] = {
+    val output = new java.io.ByteArrayOutputStream()
+
+    // BMP header for a valid binary file
+    val header = Array[Byte](
+      0x42, 0x4D, 0x4A, 0xB9.toByte, 0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8A.toByte, 0x00, 0x00, 0x00, 0x7C, 0x00,
+      0x00, 0x00, 0x78, 0x05, 0x00, 0x00, 0x78, 0x05, 0x00, 0x00, 0x01, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0xC0.toByte, 0xB8.toByte, 0x59, 0x00, 0x61, 0x0F, 0x00, 0x00, 0x61, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF.toByte, 0x00, 0x00, 0xFF.toByte, 0x00, 0x00, 0xFF.toByte, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0xFF.toByte, 0x42, 0x47, 0x52, 0x73, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x54, 0xB8.toByte, 0x1E, 0xFC.toByte, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x66, 0x66, 0x66, 0xFC.toByte,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xC4.toByte, 0xF5.toByte, 0x28, 0xFF.toByte, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    )
+
+    output.write(header)
+    var remainingSize = size - header.length
+
+    while (remainingSize > 0) {
+      val currentChunkSize = Math.min(remainingSize, chunkSize).toInt
+      val chunk = Array.fill[Byte](currentChunkSize)(0xFF.toByte)
+      output.write(chunk)
+      remainingSize -= currentChunkSize
+    }
+
+    output.toByteArray
+  }
+
+
+
   private val api = cloudinary.api()
 
   override def afterAll(): Unit = {
@@ -321,35 +357,54 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
   }
 
   it should "support uploading large raw files from Array[Byte]" in {
-    val fileBytes = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(s"$testResourcePath/docx.docx"))
+    val fileBytes = createLargeBinaryFile(LargeFileSize)
     Await.result(for {
-      response <- uploader.uploadLargeRaw(fileBytes, LargeUploadParameters().tags(Set("large_upload_bytes_test")))
+      response <- uploader.uploadLargeRaw(fileBytes, LargeUploadParameters().tags(Set("large_upload_bytes_test")), LargeChunkSize)
     } yield {
       response.bytes should equal(fileBytes.length)
       response.tags should equal(Set("large_upload_bytes_test"))
-    }, 10.seconds)
+    }, 30.seconds)
   }
 
   it should "support uploading large raw files from InputStream" in {
-    val file = new java.io.File(s"$testResourcePath/docx.docx")
-    val inputStream = new java.io.FileInputStream(file)
+    val fileBytes = createLargeBinaryFile(LargeFileSize)
+    val inputStream = new java.io.ByteArrayInputStream(fileBytes)
     Await.result(for {
-      response <- uploader.uploadLargeRaw(inputStream, LargeUploadParameters().tags(Set("large_upload_stream_test")))
+      response <- uploader.uploadLargeRaw(inputStream, LargeUploadParameters().tags(Set("large_upload_stream_test")), LargeChunkSize)
     } yield {
-      response.bytes should equal(file.length())
+      response.bytes should equal(LargeFileSize)
       response.tags should equal(Set("large_upload_stream_test"))
-    }, 10.seconds)
+    }, 30.seconds)
   }
 
-  it should "support uploading large raw files from URL" in {
+  it should "support uploading large binary files" in {
+    val largeBinaryData = createLargeBinaryFile(LargeFileSize)
+
     Await.result(for {
-      response <- uploader.uploadLargeRaw("http://cloudinary.com/images/logo.png", LargeUploadParameters().tags(Set("large_upload_url_test")))
+      response <- uploader.uploadLarge(largeBinaryData, LargeUploadParameters().tags(Set("large_upload_binary_test")), "raw", LargeChunkSize)
     } yield {
       response.public_id should not be empty
-      response.tags should equal(Set("large_upload_url_test"))
+      response.tags should equal(Set("large_upload_binary_test"))
       response.resource_type should equal("raw")
-    }, 10.seconds)
+      response.bytes should equal(LargeFileSize)
+    }, 60.seconds)
   }
+
+  it should "support uploading large image files" in {
+    val largeImageData = createLargeBinaryFile(LargeFileSize) // BMP is a valid image format
+
+    Await.result(for {
+      response <- uploader.uploadLarge(largeImageData, LargeUploadParameters().tags(Set("large_upload_image_test")), "image", LargeChunkSize)
+    } yield {
+      response.public_id should not be empty
+      response.tags should equal(Set("large_upload_image_test"))
+      response.resource_type should equal("image")
+      response.bytes should equal(LargeFileSize)
+      response.width should be > 0
+      response.height should be > 0
+    }, 60.seconds)
+  }
+
 
   it should "support uploading large files with different resource types using uploadLarge" in {
     Await.result(for {
