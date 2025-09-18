@@ -8,7 +8,7 @@ import java.util.{Date, TimeZone}
 import com.cloudinary.Implicits._
 import com.cloudinary.parameters._
 import com.cloudinary.response._
-import com.ning.http.client._
+import org.asynchttpclient._
 import org.scalamock.scalatest.MockFactory
 import org.scalatest._
 import matchers.should._
@@ -85,10 +85,9 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
   it should "allow listing resources with cursor" in {
     val cursor = "OJNASGONQG0230JGV0JV3Q0IDVO"
     val (provider, api) = mockApi()
-    (provider.execute _) expects where { (request: Request, _) => {
+    (provider.executeRequest _) expects where { (request: Request, _: AsyncHandler[_]) =>
       val params = getQuery(request)
       params.contains(("next_cursor", cursor))
-    }
     }
     api.resources(maxResults = 1, nextCursor = cursor)
   }
@@ -139,11 +138,10 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
     df.setTimeZone(TimeZone.getTimeZone("UTC"))
     val (provider, api) = mockApi()
     val startAt = df.parse("22 Aug 2016 07:57:34 UTC")
-    (provider.execute _) expects where { (request: Request, *) => {
+    (provider.executeRequest _) expects where { (request: Request, _: AsyncHandler[_]) =>
       val params = getQuery(request)
       params.contains(("start_at", "22 Aug 2016 07:57:34 UTC GMT")) &&
         params.contains(("direction", "asc"))
-    }
     }
     api.resources(`type` = "upload", startAt = Some(startAt), direction = Some(Api.ASCENDING))
   }
@@ -244,9 +242,8 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
 
   it should "allow listing transformations with next_cursor" in {
     val (provider, api) = mockApi()
-    (provider.execute _) expects where { (request: Request, *) => {
-        request.getQueryParams.contains(new Param("next_cursor", "1234567"))
-      }
+    (provider.executeRequest _) expects where { (request: Request, _: AsyncHandler[_]) =>
+      request.getQueryParams.contains(new Param("next_cursor", "1234567"))
     }
     api.transformations(nextCursor = "1234567")
   }
@@ -282,24 +279,21 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
     val t = Transformation().c_("scale").w_(100)
     val (provider, api) = mockApi()
     inSequence {
-      (provider.execute _) expects where {
-        (request: Request, *) => {
+      (provider.executeRequest _) expects where {
+        (request: Request, _: AsyncHandler[_]) =>
           request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
             request.getUrl.matches(".+/" + apiTestTransformation + "?.+")
-        }
       }
-      (provider.execute _) expects where {
-        (request: Request, *) => {
+      (provider.executeRequest _) expects where {
+        (request: Request, _: AsyncHandler[_]) =>
           request.getQueryParams.contains(new Param("next_cursor", "1234567")) &&
             request.getUrl.matches(".+/" + apiTestTransformation + "?.+")
-        }
       }
-      (provider.execute _) expects where {
-        (request: Request, *) => {
+      (provider.executeRequest _) expects where {
+        (request: Request, _: AsyncHandler[_]) =>
           request.getQueryParams.contains(new Param("max_results", "111")) &&
             !request.getQueryParams.asScala.exists(p => p.getName == "next_cursor") &&
             request.getUrl.matches(".+/" + apiTestTransformation + "?.+")
-        }
       }
     }
     api.transformationByName(apiTestTransformation, "1234567")
@@ -309,10 +303,9 @@ class ApiSpec extends MockableFlatSpec with Matchers with OptionValues with Insi
 
   it should "allow listing transformation by name with next_cursor" in {
     val (provider, api) = mockApi()
-    provider.execute _ expects where {
-      (request: Request, handler: AsyncHandler[Nothing]) => {
+    (provider.executeRequest _) expects where {
+      (request: Request, _: AsyncHandler[_]) =>
         request.getQueryParams.contains(new Param("next_cursor", "1234567"))
-      }
     }
     api.transformationByName(apiTestTransformation, nextCursor = "1234567")
   }

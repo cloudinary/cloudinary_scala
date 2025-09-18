@@ -1,7 +1,7 @@
 package com.cloudinary
 
 import java.net.URLDecoder
-import com.ning.http.util.Base64
+import java.util.Base64
 
 case class Url(
   cloudName: String,
@@ -154,7 +154,7 @@ case class Url(
     val signature = if (signUrl) {
       val toSign = List(transformationStr, Some(signableSource)).flatten.mkString("/")
       Some("s--" +
-          Base64.encode(Cloudinary.sign(toSign, apiSecret.getOrElse(throw new Exception("Must supply api secret to sign URLs")))).
+          Base64.getEncoder.encodeToString(Cloudinary.sign(toSign, apiSecret.getOrElse(throw new Exception("Must supply api secret to sign URLs")))).
           	take(8).
           	replace('+', '-').replace('/', '_') + "--")
     } else None

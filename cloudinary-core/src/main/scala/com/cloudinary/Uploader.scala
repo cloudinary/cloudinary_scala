@@ -2,11 +2,12 @@ package com.cloudinary
 
 import java.io._
 import java.nio.charset.StandardCharsets
+import java.time.Duration
 
 import com.cloudinary.parameters._
 import com.cloudinary.response._
-import com.ning.http.client.RequestBuilder
-import com.ning.http.client.multipart.{ByteArrayPart, FilePart, StringPart}
+import org.asynchttpclient.RequestBuilder
+import org.asynchttpclient.request.body.multipart.{ByteArrayPart, FilePart, StringPart}
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 
@@ -31,7 +32,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
 
     val apiUrlBuilder = new RequestBuilder("POST")
     apiUrlBuilder.setUrl(apiUrl)
-    requestTimeout.map(timeout => apiUrlBuilder.setRequestTimeout(timeout)) //in milliseconds
+    requestTimeout.map(timeout => apiUrlBuilder.setRequestTimeout(Duration.ofMillis(timeout))) //in milliseconds
 
     processedParams foreach {
       param =>
@@ -40,10 +41,10 @@ class Uploader(implicit val cloudinary: Cloudinary) {
           case list: Iterable[_] => list.foreach {
             v =>
               apiUrlBuilder.addBodyPart(
-                new StringPart(k + "[]", v.toString, StringPart.DEFAULT_CONTENT_TYPE, StandardCharsets.UTF_8))
+                new StringPart(k + "[]", v.toString))
           }
           case null =>
-          case _ => apiUrlBuilder.addBodyPart(new StringPart(k, v.toString, StringPart.DEFAULT_CONTENT_TYPE, StandardCharsets.UTF_8))
+          case _ => apiUrlBuilder.addBodyPart(new StringPart(k, v.toString))
         }
     }
 
@@ -52,7 +53,7 @@ class Uploader(implicit val cloudinary: Cloudinary) {
       case fp: FilePart => apiUrlBuilder.addBodyPart(fp)
       case f: File => apiUrlBuilder.addBodyPart(new FilePart("file", f))
       case fn: String if !fn.matches(illegalFileName) => apiUrlBuilder.addBodyPart(new FilePart("file", new File(fn)))
-      case body: String => apiUrlBuilder.addBodyPart(new StringPart("file", body, StringPart.DEFAULT_CONTENT_TYPE, StandardCharsets.UTF_8))
+      case body: String => apiUrlBuilder.addBodyPart(new StringPart("file", body))
       case body: Array[Byte] => apiUrlBuilder.addBodyPart(new ByteArrayPart("file", body))
       case null =>
       case _ => throw new IOException("Unrecognized file parameter " + file);

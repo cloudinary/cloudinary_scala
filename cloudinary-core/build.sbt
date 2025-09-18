@@ -35,7 +35,7 @@ pomExtra := {
 }
 
 libraryDependencies ++= Seq(
-  "com.ning" % "async-http-client" % "1.9.40",
+  "org.asynchttpclient" % "async-http-client" % "3.0.3",
   "org.json4s" %% "json4s-native" % "3.6.10",
   "org.json4s" %% "json4s-ext" % "3.6.10",
   "org.scalatest" %% "scalatest" % "3.2.2" % "test",
@@ -48,4 +48,3 @@ libraryDependencies += "org.scalamock" %% "scalamock-scalatest-support" % "3.4.1
 resolvers ++= Seq("sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots", "sonatype releases" at "https://oss.sonatype.org/content/repositories/releases")
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature")
-

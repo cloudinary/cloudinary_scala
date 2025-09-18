@@ -2,7 +2,7 @@ package com.cloudinary
 
 import scala.concurrent.Promise
 
-import _root_.com.ning.http.client.{
+import _root_.org.asynchttpclient.{
   AsyncHandler,
   AsyncCompletionHandler,
   HttpResponseStatus,
