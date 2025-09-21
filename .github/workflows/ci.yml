@@ -1,0 +1,42 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        scala-version: ['2.11.8', '2.12.8']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8 with SBT cache
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+          cache: 'sbt'
+
+      - name: Install SBT and jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https curl gnupg jq
+          echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+          curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
+          sudo apt-get update
+          sudo apt-get install -y sbt
+
+      - name: Set CLOUDINARY_URL
+        run: |
+          export CLOUDINARY_URL=$(bash tools/get_test_cloud.sh)
+          echo "cloud_name: $(echo $CLOUDINARY_URL | cut -d'@' -f2)"
+          echo "CLOUDINARY_URL=$CLOUDINARY_URL" >> $GITHUB_ENV
+
+      - name: Run tests
+        run: sbt ++${{ matrix.scala-version }} test
+        env:
+          CLOUDINARY_URL: ${{ env.CLOUDINARY_URL }}

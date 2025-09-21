@@ -6,7 +6,7 @@ import scala.concurrent._
 import ExecutionContext.Implicits.global
 import org.joda.time.DateTime
 import play.api._
-import play.api.mvc.{AbstractController, Action, Controller, ControllerComponents}
+import play.api.mvc.{AbstractController, Action, ControllerComponents}
 import play.api.i18n.I18nSupport
 import play.api.i18n.MessagesApi
 import play.api.data._
@@ -55,7 +55,7 @@ class PhotosController @Inject()(cc: ControllerComponents,
   }
 
   def freshUnsignedDirect = Action { implicit messageApi =>
-    // Preset creation does not really belong here - it's just here for the sample to work. 
+    // Preset creation does not really belong here - it's just here for the sample to work.
     // The preset should be created offline
 
     val presetName = "sample_" + com.cloudinary.Cloudinary.apiSignRequest(

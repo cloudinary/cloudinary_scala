@@ -67,6 +67,16 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     httpclient.executeAndExtractResponse[T](request)
   }
 
+  def callApiWithHeaders[T](action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image", headers: Map[String, String] = Map(), signed: Boolean = true, requestTimeout: Option[Int] = None)
+                           (implicit mf: scala.reflect.Manifest[T]): Future[T] = {
+    val request = createRequest(action, optionalParams, file, resourceType, signed, requestTimeout)
+    // Add custom headers to the request
+    headers.foreach { case (key, value) =>
+      request.getHeaders.add(key, value)
+    }
+    httpclient.executeAndExtractResponse[T](request)
+  }
+
   def callRawApi(action: String, optionalParams: Map[String, Any], file: AnyRef, resourceType: String = "image") = {
     val request = createRequest(action, optionalParams, file, resourceType)
     httpclient.executeCloudinaryRequest(request)
@@ -89,45 +99,124 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     callApi[UploadResponse]("upload", params.toMap, file, resourceType, params.signed, requestTimeout)
   }
 
-  def uploadLargeRaw(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), bufferSize: Int = 20000000) = {
-    val (input, fileName) = file match {
-      case s: String =>
-        val f = new File(s)
-        (new FileInputStream(f), Some(f.getName))
-      case f: File => (new FileInputStream(f), Some(f.getName))
-      case b: Array[Byte] => (new ByteArrayInputStream(b), None)
-      case is: InputStream => (is, None)
-    }
-    try {
-      uploadLargeRawPart(input, params, fileName, bufferSize)
-    } catch {
-      case e: Exception =>
-        input.close()
-        throw e
+  def uploadLarge(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), resourceType: String = "image", chunkSize: Int = 20000000): Future[UploadResponse] = {
+    // Handle remote URLs - delegate to regular upload
+    file match {
+      case url: String if url.startsWith("http://") || url.startsWith("https://") =>
+        // For URLs, call API directly
+        callApi[UploadResponse]("upload", params.toMap, url, resourceType, params.signed)
+      case _ =>
+        val (input, fileName, fileSize) = file match {
+          case s: String =>
+            val f = new File(s)
+            (new FileInputStream(f), Some(f.getName), f.length())
+          case f: File =>
+            (new FileInputStream(f), Some(f.getName), f.length())
+          case b: Array[Byte] =>
+            (new ByteArrayInputStream(b), None, b.length.toLong)
+          case is: InputStream =>
+            // For InputStreams, we can't determine size upfront - read all data
+            val buffer = scala.io.Source.fromInputStream(is, "ISO-8859-1").map(_.toByte).toArray
+            is.close()
+            (new ByteArrayInputStream(buffer), None, buffer.length.toLong)
+        }
+
+        uploadLargeWithRanges(input, fileName, fileSize, params, resourceType, chunkSize)
     }
   }
 
-  private def uploadLargeRawPart(input: InputStream, params: LargeUploadParameters, originalFileName: Option[String], bufferSize: Int, partNumber: Int = 1): Future[LargeRawUploadResponse] = {
-    val uploadParams = params.toMap + ("part_number" -> partNumber.toString)
-    val (last, buffer) = readChunck(input, bufferSize)
-    val part = new ByteArrayPart("file", buffer)
-    part.setFileName(originalFileName.getOrElse("file"))
-    (partNumber, last) match {
-      case (_, true) =>
-        input.close()
-        callApi[LargeRawUploadResponse]("upload_large", uploadParams + ("final" -> "1"), part, "raw")
-      case (1, _) =>
-        val responseFuture = callApi[LargeRawUploadResponse]("upload_large", uploadParams, part, "raw")
-        responseFuture.flatMap { response =>
-          uploadLargeRawPart(input, params.publicId(response.public_id).uploadId(response.upload_id.get), originalFileName, bufferSize, partNumber + 1)
-        }
-      case _ =>
-        val responseFuture = callApi[LargeRawUploadResponse]("upload_large", uploadParams, part, "raw")
-        responseFuture.flatMap {
-          response => uploadLargeRawPart(input, params, originalFileName, bufferSize, partNumber + 1)
-        }
+  def uploadLargeRaw(file: AnyRef, params: LargeUploadParameters = LargeUploadParameters(), chunkSize: Int = 20000000): Future[LargeRawUploadResponse] = {
+    // Backwards compatibility wrapper - delegate to generic uploadLarge
+    uploadLarge(file, params, "raw", chunkSize).map { uploadResponse =>
+      val response = LargeRawUploadResponse(
+        public_id = uploadResponse.public_id,
+        url = uploadResponse.url,
+        secure_url = uploadResponse.secure_url,
+        signature = uploadResponse.signature,
+        bytes = uploadResponse.bytes,
+        resource_type = uploadResponse.resource_type
+      )
+      response.raw = uploadResponse.raw
+      response
     }
   }
+
+  private def uploadLargeWithRanges(input: InputStream, fileName: Option[String], fileSize: Long, params: LargeUploadParameters, resourceType: String, chunkSize: Int): Future[UploadResponse] = {
+    // Generate unique upload ID for this upload session
+    val uploadId = Cloudinary.randomPublicId()
+    var currentLoc = 0L
+    var uploadResult: Future[UploadResponse] = null
+    var updatedParams = params
+
+    val finalFileName = fileName.getOrElse("stream")
+
+    def uploadNextChunk(): Future[UploadResponse] = {
+      val buffer = new Array[Byte](chunkSize)
+      val bytesRead = input.read(buffer)
+
+      if (bytesRead <= 0) {
+        // No more data, close stream and return the last result
+        try { input.close() } catch { case _: Exception => }
+        uploadResult
+      } else {
+        val actualBuffer = if (bytesRead < chunkSize) {
+          buffer.take(bytesRead)
+        } else {
+          buffer
+        }
+
+        val contentRange = s"bytes $currentLoc-${currentLoc + bytesRead - 1}/$fileSize"
+        currentLoc += bytesRead
+
+        // Create multipart with HTTP headers
+        val part = new ByteArrayPart("file", actualBuffer, null, null, finalFileName)
+
+        // HTTP headers should not be included in signature parameters
+        val uploadParams = updatedParams.toMap
+
+        val responseFuture = callApiWithHeaders[LargeUploadResponse]("upload", uploadParams, part, resourceType,
+          Map("Content-Range" -> contentRange, "X-Unique-Upload-Id" -> uploadId), updatedParams.signed)
+
+        responseFuture.flatMap { response =>
+          if (!response.done) {
+            // Intermediate response - continue with next chunk without updating public_id
+            if (input.available() > 0) {
+              uploadNextChunk()
+            } else {
+              // No more data but upload not done - this shouldn't happen
+              throw new RuntimeException("No more data to upload but server says not done")
+            }
+          } else {
+            // Final response - convert to UploadResponse and update params
+            val uploadResponse = UploadResponse(
+              public_id = response.public_id,
+              url = response.url,
+              secure_url = response.secure_url,
+              signature = response.signature,
+              bytes = response.bytes,
+              resource_type = response.resource_type
+            )
+            uploadResponse.raw = response.raw
+            val responseFuture = Future.successful(uploadResponse)
+            uploadResult = responseFuture
+            updatedParams = updatedParams.publicId(response.public_id)
+
+            // Check if there's more data to upload
+            if (input.available() > 0) {
+              uploadNextChunk()
+            } else {
+              // Close the stream when upload is complete
+              try { input.close() } catch { case _: Exception => }
+              Future.successful(uploadResponse)
+            }
+          }
+        }
+      }
+    }
+
+    uploadNextChunk()
+  }
+
 
   private def readChunck(input: InputStream, bufferSize: Int) = {
     val buffer = new Array[Byte](bufferSize)
@@ -241,10 +330,10 @@ class Uploader(implicit val cloudinary: Cloudinary) {
     val cloudinaryUploadUrl = cloudinary.cloudinaryApiUrl("upload", resourceType)
 
     s"""
-<input type="file" name="file" 
-		data-url="$cloudinaryUploadUrl" 
-		data-form-data="$tagParams" 
-		data-cloudinary-field="$field" 
+<input type="file" name="file"
+		data-url="$cloudinaryUploadUrl"
+		data-form-data="$tagParams"
+		data-cloudinary-field="$field"
 		class="$classes"
 		$htmlOptionsString/>
 """
