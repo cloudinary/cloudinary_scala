@@ -2,14 +2,18 @@ package com.cloudinary
 
 import java.net.URLDecoder
 
-import com.ning.http.client.multipart.StringPart
-import com.ning.http.client.{AsyncHttpClient, AsyncHttpClientConfig, AsyncHttpProvider, Request}
+import org.asynchttpclient.request.body.multipart.StringPart
+import org.asynchttpclient.{AsyncHttpClient, DefaultAsyncHttpClientConfig, Request, AsyncHandler, ListenableFuture}
 import org.scalamock.clazz.Mock
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.BeforeAndAfterEach
 
 import scala.collection.JavaConverters._
+
+trait MockableAsyncHttpClient extends AsyncHttpClient {
+  override def executeRequest[T](request: Request, handler: AsyncHandler[T]): ListenableFuture[T]
+}
 
 class MockableFlatSpec extends AnyFlatSpec with MockFactory with BeforeAndAfterEach{
   protected val prefix = "cloudinary_scala"
@@ -26,36 +30,34 @@ class MockableFlatSpec extends AnyFlatSpec with MockFactory with BeforeAndAfterE
   }
 
   /**
-    * Mock the AsyncHttpProvider so that calls do not invoke the server side.
-    * Expectations can be set on the execute method of AsyncHttpProvider.
+    * Mock the AsyncHttpClient so that calls do not invoke the server side.
+    * Expectations can be set on the executeRequest method of AsyncHttpClient.
     * @return the mocked instance
     */
   def mockHttp() = {
-    val mockProvider: AsyncHttpProvider = mock[AsyncHttpProvider]
-    val asyncHttpConfig = new AsyncHttpClientConfig.Builder()
-    asyncHttpConfig.setUserAgent(Cloudinary.USER_AGENT)
-    (mockProvider, new AsyncHttpClient(mockProvider, asyncHttpConfig.build()))
+    val mockClient: MockableAsyncHttpClient = mock[MockableAsyncHttpClient]
+    (mockClient, mockClient)
   }
 
   /**
-    * Returns an instance of [[com.cloudinary.Api Api]] with a mocked [[com.ning.http.client.AsyncHttpProvider AsyncHttpProvider]]
+    * Returns an instance of [[com.cloudinary.Api Api]] with a mocked [[org.asynchttpclient.AsyncHttpClient AsyncHttpClient]]
     */
   def mockApi() = {
     val api = cloudinary.api()
-    val (mockProvider, client) = mockHttp()
+    val (mockClient, client) = mockHttp()
     api.httpclient.client = client
-    (mockProvider, api)
+    (mockClient, api)
   }
 
 
   /**
-    * Returns an instance of [[com.cloudinary.Uploader Uploader]] with a mocked [[com.ning.http.client.AsyncHttpProvider AsyncHttpProvider]]
+    * Returns an instance of [[com.cloudinary.Uploader Uploader]] with a mocked [[org.asynchttpclient.AsyncHttpClient AsyncHttpClient]]
     */
   def mockUploader() = {
     val uploader = cloudinary.uploader()
-    val (mockProvider, client) = mockHttp()
+    val (mockClient, client) = mockHttp()
     uploader.httpclient.client = client
-    (mockProvider, uploader)
+    (mockClient, uploader)
   }
 
 
@@ -65,7 +67,7 @@ class MockableFlatSpec extends AnyFlatSpec with MockFactory with BeforeAndAfterE
     * @return an array of tuples in the form of (name, value)
     */
   def getParts(request: Request): scala.collection.mutable.Buffer[(String, String)] = {
-    request.getParts.asScala.map(p => {
+    request.getBodyParts.asScala.map(p => {
       val sp = p.asInstanceOf[StringPart]
       (sp.getName, sp.getValue)
     })

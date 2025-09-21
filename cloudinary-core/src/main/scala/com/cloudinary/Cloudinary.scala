@@ -6,7 +6,7 @@ import java.security.NoSuchAlgorithmException
 import java.net.URI
 import java.net.URLDecoder
 import java.io.UnsupportedEncodingException
-import _root_.com.ning.http.client.RequestBuilder
+import _root_.org.asynchttpclient.RequestBuilder
 
 object Cloudinary {
   final val CF_SHARED_CDN = "d3jpl91pxevbkh.cloudfront.net";
@@ -60,7 +60,7 @@ object Cloudinary {
     val digest = sign(params.mkString("&"), apiSecret)
     bytes2Hex(digest).toLowerCase()
   }
-  
+
   def sign(toSign:String, apiSecret: String) = {
     var md: MessageDigest = null
     try {

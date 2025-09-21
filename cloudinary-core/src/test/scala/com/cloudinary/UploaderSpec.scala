@@ -5,8 +5,8 @@ import java.util.concurrent.TimeoutException
 import com.cloudinary.Implicits._
 import com.cloudinary.parameters._
 import com.cloudinary.response._
-import com.ning.http.client.Request
-import com.ning.http.client.multipart.StringPart
+import org.asynchttpclient.{Request, AsyncHandler, ListenableFuture}
+import org.asynchttpclient.request.body.multipart.StringPart
 import org.scalatest.{BeforeAndAfterAll, Inside, OptionValues, Tag, matchers}
 import matchers.should._
 
@@ -204,24 +204,19 @@ class UploaderSpec extends MockableFlatSpec with Matchers with OptionValues with
 
   it should "support generating sprites" in {
     val sprite_test_tag: String = "sprite_test_tag" + suffix
-    val (provider, uploader )= mockUploader()
-    val tagPart: StringPart = new StringPart("tag", sprite_test_tag, "UTF-8")
-    (provider.execute _) expects where { (request: Request, *) => {
-      val map = getParts(request)
-      map.contains(("tag", sprite_test_tag))
+    val (provider, uploader) = mockUploader()
+    (provider.executeRequest _) expects where { (request: Request, _: AsyncHandler[_]) =>
+      getParts(request).contains(("tag", sprite_test_tag))
     }
-    }
-    (provider.execute _) expects where { (request: Request, *) => {
+    (provider.executeRequest _) expects where { (request: Request, _: AsyncHandler[_]) =>
       val map = getParts(request)
       map.contains(("tag", sprite_test_tag)) &&
         map.contains(("transformation", "w_100"))
     }
-    }
-    (provider.execute _) expects where { (request: Request, *) => {
+    (provider.executeRequest _) expects where { (request: Request, _: AsyncHandler[_]) =>
       val map = getParts(request)
       map.contains(("tag", sprite_test_tag)) &&
         map.contains(("transformation", "f_jpg,w_100"))
-    }
     }
     uploader.generateSprite(sprite_test_tag)
     uploader.generateSprite(sprite_test_tag, transformation = new Transformation().w_(100))

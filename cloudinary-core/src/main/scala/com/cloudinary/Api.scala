@@ -3,8 +3,8 @@ package com.cloudinary
 import java.util.Date
 import java.util.TimeZone
 import scala.concurrent.Future
-import com.ning.http.client.Realm
-import com.ning.http.client.RequestBuilder
+import org.asynchttpclient.Realm
+import org.asynchttpclient.RequestBuilder
 import response._
 import parameters.UpdateParameters
 import java.text.SimpleDateFormat
@@ -55,9 +55,7 @@ class Api(implicit cloudinary: Cloudinary) {
       }
     }
 
-    val realm = new Realm.RealmBuilder()
-      .setPrincipal(cloudinary.apiKey())
-      .setPassword(cloudinary.apiSecret())
+    val realm = new Realm.Builder(cloudinary.apiKey(), cloudinary.apiSecret())
       .setUsePreemptiveAuth(true)
       .setScheme(Realm.AuthScheme.BASIC)
       .build()

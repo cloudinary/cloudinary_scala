@@ -1,14 +1,14 @@
 package com.cloudinary
 
 import java.util.concurrent.atomic.AtomicReference
+import java.time.Duration
 
-import com.ning.http.client.AsyncHttpClientConfig
-import com.ning.http.client.AsyncHttpClient
+import org.asynchttpclient.{AsyncHttpClient, DefaultAsyncHttpClient, DefaultAsyncHttpClientConfig}
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
 import scala.concurrent.{Future, Promise}
-import com.ning.http.client.Request
+import org.asynchttpclient.Request
 
 import concurrent.ExecutionContext.Implicits.global
 import com.cloudinary.response.RawResponse
@@ -53,10 +53,11 @@ object HttpClient {
 
   private[cloudinary] def newClient(): AsyncHttpClient = {
 
-    val asyncHttpConfig = new AsyncHttpClientConfig.Builder()
-    asyncHttpConfig.setUserAgent(Cloudinary.USER_AGENT)
-    asyncHttpConfig.setReadTimeout(-1)
-    new AsyncHttpClient(asyncHttpConfig.build())
+    val asyncHttpConfig = new DefaultAsyncHttpClientConfig.Builder()
+      .setUserAgent(Cloudinary.USER_AGENT)
+      .setReadTimeout(Duration.ofMillis(-1))
+      .build()
+    new DefaultAsyncHttpClient(asyncHttpConfig)
   }
 
   /**
